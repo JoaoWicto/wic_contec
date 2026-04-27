@@ -1,0 +1,17 @@
+# Windows
+Thumbs.db
+desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+
+# Planilhas (Opcional: remova se quiser subir suas planilhas para o GitHub)
+# *.xlsx
+# *.xls
+# *.csv
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
