@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ContecControl — Wictor</title>
+  <title>WicControle — Wictor</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap"
     rel="stylesheet">
@@ -1533,7 +1533,7 @@
     <div class="login-card">
       <div style="text-align:center; margin-bottom:24px;">
         <div class="logo-mark" style="width:50px; height:50px; margin:0 auto 12px; font-size:24px;">W</div>
-        <div class="logo-text" style="font-size:18px;">ContecControl<small>Acesso Restrito</small></div>
+        <div class="logo-text" style="font-size:18px;">WicControle<small>Acesso Restrito</small></div>
       </div>
       <div id="login-form">
         <div class="login-field">
@@ -1558,7 +1558,7 @@
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <div class="logo-mark">W</div>
-      <div class="logo-text">ContecControl<small>Escritório de Contabilidade</small></div>
+      <div class="logo-text">WicControle<small>Escritório de Contabilidade</small></div>
     </div>
     <div class="nav-items">
       <div
@@ -1752,7 +1752,7 @@
 
     <div
       style="padding:12px 24px;border-top:1px solid var(--border);background:var(--s1);font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center">
-      <span>💼 ContecControl — <span id="footerCount">172</span> registros exibidos | <small>Desenvolvido por João
+      <span>💼 WicControle — <span id="footerCount">172</span> registros exibidos | <small>Desenvolvido por João
           Wictor</small></span>
       <div style="display:flex; gap:8px">
         <button class="btn btn-ghost" onclick="document.getElementById('csvInput').click()">⬆ Importar CSV</button>
@@ -2489,8 +2489,8 @@
       data = data.concat(extra.map(x => ({ ...x, isBase: false })));
       const tIn = document.getElementById('tgToken');
       const cIn = document.getElementById('tgChatId');
-      if (tIn) tIn.value = localStorage.getItem('contec_tg_token') || '';
-      if (cIn) cIn.value = localStorage.getItem('contec_tg_chatid') || '';
+      if (tIn) tIn.value = localStorage.getItem('contec_tg_token') || '8217111312:AAFmDmxBAcphGXkOzdTs5fZ3WsZuviGZXrM';
+      if (cIn) cIn.value = localStorage.getItem('contec_tg_chatid') || '8015890725';
     }
 
     function saveData() {
@@ -2842,7 +2842,7 @@
           msg += `Permanecemos à disposição para quaisquer esclarecimentos.`;
           document.getElementById('zapCustomMsg').value = msg;
         } else {
-          document.getElementById('zapCustomMsg').value = `CONTEC :  ${greeting}!\n\nReferente à empresa *${r.empresa}* (CNPJ: ${r.cnpj}), gostaríamos de informar sobre seus documentos/parcelamentos.\n\nAtenciosamente,\nContecControl`;
+          document.getElementById('zapCustomMsg').value = `WICCONTROLE :  ${greeting}!\n\nReferente à empresa *${r.empresa}* (CNPJ: ${r.cnpj}), gostaríamos de informar sobre seus documentos/parcelamentos.\n\nAtenciosamente,\nWicControle`;
         }
       }
       openModal('zapModal');
@@ -2892,7 +2892,7 @@
       const isPrint = (r.docEnviado || '').toUpperCase().includes('IMPRESSO');
       const type = isPrint ? '🖨 IMPRESSÃO' : '📱 WHATSAPP';
 
-      const text = `🚀 *ContecControl - Notificação*\n\nEmpresa: *${r.empresa}*\nStatus: ${type}\nUsuário: ${r.usuario}\nCNPJ: ${r.cnpj}\n\nConcluído em: ${new Date().toLocaleString()}`;
+      const text = `🚀 *WicControle - Notificação*\n\nEmpresa: *${r.empresa}*\nStatus: ${type}\nUsuário: ${r.usuario}\nCNPJ: ${r.cnpj}\n\nConcluído em: ${new Date().toLocaleString()}`;
 
       // Using GET to bypass CORS preflight issues on file:// protocol
       const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
@@ -2912,7 +2912,7 @@
         return toast('⚠️ O Token deve incluir os números iniciais (Ex: 12345:ABC...)');
       }
 
-      const text = '✅ Teste de conexão ContecControl bem-sucedido!';
+      const text = '✅ Teste de conexão WicControle bem-sucedido!';
       const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
 
       fetch(url)
@@ -3218,7 +3218,7 @@
       let html = `
       <div class="print-header">
         <div>
-          <h1 style="margin:0; font-size:22px;">ContecControl</h1>
+          <h1 style="margin:0; font-size:22px;">WicControle</h1>
           <p style="margin:2px 0; font-size:12px;">Relatório de Fechamento de Parcelamentos</p>
         </div>
         <div style="text-align:right">
@@ -3275,7 +3275,7 @@
       </div>
       
       <div class="print-footer">
-        Este documento é um relatório gerado automaticamente pelo sistema ContecControl.
+        Este documento é um relatório gerado automaticamente pelo sistema WicControle.
       </div>
       `;
 
