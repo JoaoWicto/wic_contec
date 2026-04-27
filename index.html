@@ -1,0 +1,3375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ContecControl — Wictor</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap"
+    rel="stylesheet">
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+  <!-- Chart.js and SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #09090f;
+      --s1: #111118;
+      --s2: #18181f;
+      --s3: #22222c;
+      --border: #2a2a38;
+      --border2: #333344;
+      --accent: #5b6ef5;
+      --accent2: #7c8dff;
+      --green: #2dd87a;
+      --yellow: #f5b942;
+      --red: #f55656;
+      --orange: #f58642;
+      --purple: #b06ef5;
+      --cyan: #42c8f5;
+      --teal: #42f5c8;
+      --gray: #525270;
+      --text: #e8e8f5;
+      --text2: #8888aa;
+      --text3: #555577;
+      --radius: 12px;
+      --r-sm: 8px;
+      --r-: 8px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--s1);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 3px;
+    }
+
+    /* ── SIDEBAR NAV ── */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 220px;
+      height: 100vh;
+      background: var(--s1);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 200;
+      transition: transform .3s;
+    }
+
+    .sidebar-logo {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Instrument Serif', serif;
+      font-size: 17px;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .logo-text {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -.3px;
+      line-height: 1.2;
+    }
+
+    .logo-text small {
+      display: block;
+      font-size: 10px;
+      color: var(--text2);
+      font-weight: 400;
+      letter-spacing: .3px;
+    }
+
+    .nav-items {
+      flex: 1;
+      padding: 12px 8px;
+      overflow-y: auto;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      transition: all .15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover {
+      background: var(--s2);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: rgba(91, 110, 245, 0.15);
+      color: var(--accent2);
+    }
+
+    .nav-item .nav-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .nav-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 12px;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .main {
+      margin-left: 220px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .page {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+    }
+
+    .page.active {
+      display: flex;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--s1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.4px;
+      font-family: 'Instrument Serif', serif;
+    }
+
+    .topbar-sub {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 1px;
+    }
+
+    .topbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ── STATS CARDS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      padding: 20px 24px 0;
+    }
+
+    .stat-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--clr, var(--accent));
+      border-radius: 2px 2px 0 0;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-2px);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      font-weight: 500;
+    }
+
+    .stat-num {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: 'DM Mono', monospace;
+      margin: 6px 0 2px;
+      color: var(--clr, var(--text));
+    }
+
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      background: var(--s1);
+      position: sticky;
+      top: 65px;
+      z-index: 90;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 14px 9px 38px;
+      border-radius: var(--r-sm);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .search-box input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-box input::placeholder {
+      color: var(--text2);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text2);
+      font-size: 14px;
+    }
+
+    select,
+    .sel {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: var(--r-sm);
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      padding: 9px 16px;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      border: none;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent2);
+    }
+
+    .btn-ghost {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      border-color: var(--border2);
+    }
+
+    .btn-danger {
+      background: rgba(245, 86, 86, 0.12);
+      border: 1px solid rgba(245, 86, 86, 0.3);
+      color: var(--red);
+    }
+
+    .btn-danger:hover {
+      background: rgba(245, 86, 86, 0.2);
+    }
+
+    .result-badge {
+      margin-left: auto;
+      background: var(--s3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    /* ── TABS ── */
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 0 4px 8px;
+      cursor: pointer;
+      position: relative;
+      transition: color .2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      color: var(--accent2);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent2);
+      border-radius: 2px 2px 0 0;
+    }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      padding: 0 24px 24px;
+      overflow: auto;
+      max-height: 70vh;
+      flex: 1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 3px;
+      margin-top: 12px;
+    }
+
+    thead th {
+      color: var(--text2);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .9px;
+      font-weight: 600;
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      background: var(--s1);
+      z-index: 10;
+    }
+
+    thead th:hover {
+      color: var(--text);
+    }
+
+    tbody tr {
+      background: var(--s2);
+      border-radius: var(--r-sm);
+      transition: background .15s;
+      cursor: pointer;
+    }
+
+    tbody tr:hover {
+      background: var(--s3);
+    }
+
+    td {
+      padding: 10px 12px;
+      font-size: 12.5px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td:first-child {
+      border-left: 1px solid var(--border);
+      border-radius: var(--r-sm) 0 0 var(--r-sm);
+    }
+
+    td:last-child {
+      border-right: 1px solid var(--border);
+      border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    }
+
+    .e-name {
+      font-weight: 600;
+      color: var(--text);
+      max-width: 240px;
+      line-height: 1.3;
+    }
+
+    .e-user {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 2px;
+    }
+
+    .cnpj-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    .mono {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+    }
+
+    /* ── STATUS BADGES ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+      letter-spacing: .3px;
+    }
+
+    .b-zap {
+      background: rgba(66, 200, 245, .1);
+      color: var(--cyan);
+      border: 1px solid rgba(66, 200, 245, .25);
+    }
+
+    .b-zapok {
+      background: rgba(45, 216, 122, .1);
+      color: var(--green);
+      border: 1px solid rgba(45, 216, 122, .25);
+    }
+
+    .b-imp {
+      background: rgba(245, 185, 66, .1);
+      color: var(--yellow);
+      border: 1px solid rgba(245, 185, 66, .25);
+    }
+
+    .b-impok {
+      background: rgba(45, 216, 122, .1);
+      color: var(--green);
+      border: 1px solid rgba(45, 216, 122, .25);
+    }
+
+    .b-auto {
+      background: rgba(176, 110, 245, .1);
+      color: var(--purple);
+      border: 1px solid rgba(176, 110, 245, .25);
+    }
+
+    .b-susp {
+      background: rgba(245, 134, 66, .1);
+      color: var(--orange);
+      border: 1px solid rgba(245, 134, 66, .25);
+    }
+
+    .b-canc {
+      background: rgba(245, 86, 86, .1);
+      color: var(--red);
+      border: 1px solid rgba(245, 86, 86, .25);
+    }
+
+    .b-liq {
+      background: rgba(82, 82, 112, .15);
+      color: var(--gray);
+      border: 1px solid rgba(82, 82, 112, .3);
+    }
+
+    .b-resc {
+      background: rgba(245, 86, 86, .08);
+      color: #e07070;
+      border: 1px solid rgba(245, 86, 86, .2);
+    }
+
+    .b-reg {
+      background: rgba(66, 200, 245, .08);
+      color: var(--cyan);
+      border: 1px solid rgba(66, 200, 245, .2);
+    }
+
+    .b-enc {
+      background: rgba(82, 82, 112, .12);
+      color: var(--gray);
+      border: 1px solid rgba(82, 82, 112, .25);
+    }
+
+    .b-sem {
+      background: rgba(245, 86, 86, .12);
+      color: var(--red);
+      border: 1px solid rgba(245, 86, 86, .3);
+    }
+
+    .b-sim {
+      background: rgba(45, 216, 122, .1);
+      color: var(--green);
+      border: 1px solid rgba(45, 216, 122, .25);
+    }
+
+    .b-nao {
+      background: rgba(82, 82, 112, .1);
+      color: var(--gray);
+      border: 1px solid rgba(82, 82, 112, .2);
+    }
+
+    .b-deb {
+      background: rgba(91, 110, 245, .1);
+      color: var(--accent2);
+      border: 1px solid rgba(91, 110, 245, .25);
+    }
+
+    .b-ok {
+      background: rgba(66, 245, 200, .1);
+      color: var(--teal);
+      border: 1px solid rgba(66, 245, 200, .25);
+    }
+
+    .b-def {
+      background: var(--s3);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+
+    /* ── PILL TOGGLE (editable cells) ── */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      transition: all .15s;
+      min-width: 52px;
+      justify-content: center;
+    }
+
+    .pill:hover {
+      filter: brightness(1.15);
+    }
+
+    .pill-empty {
+      background: var(--s3);
+      color: var(--text2);
+      border-color: var(--border);
+    }
+
+    .pill-sim {
+      background: rgba(45, 216, 122, .15);
+      color: var(--green);
+      border-color: rgba(45, 216, 122, .35);
+    }
+
+    .pill-nao {
+      background: rgba(82, 82, 112, .1);
+      color: var(--gray);
+      border-color: rgba(82, 82, 112, .25);
+    }
+
+    .pill-deb {
+      background: rgba(91, 110, 245, .12);
+      color: var(--accent2);
+      border-color: rgba(91, 110, 245, .3);
+    }
+
+    .pill-ok {
+      background: rgba(66, 245, 200, .1);
+      color: var(--teal);
+      border-color: rgba(66, 245, 200, .3);
+    }
+
+    /* ── COMMENT ICON ── */
+    .comment-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text2);
+      font-size: 14px;
+      transition: all .15s;
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    .comment-btn:hover {
+      color: var(--accent2);
+      background: rgba(91, 110, 245, .1);
+    }
+
+    .comment-btn.has-note {
+      color: var(--yellow);
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .7);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--s2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(20px);
+      transition: transform .2s;
+    }
+
+    .modal-overlay.open .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Instrument Serif', serif;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text2);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+      background: var(--s3);
+    }
+
+    /* ── FORM FIELDS ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .form-grid.cols3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .form-grid.cols1 {
+      grid-template-columns: 1fr;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 11px;
+      color: var(--text2);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: var(--r-sm);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      transition: border-color .2s;
+      width: 100%;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .field-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+      grid-column: 1/-1;
+    }
+
+    .field-title {
+      font-size: 12px;
+      color: var(--text2);
+      font-weight: 600;
+      grid-column: 1/-1;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      padding-top: 8px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── NOTES / COMMENTS PANEL ── */
+    .notes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .note-item {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+      position: relative;
+    }
+
+    .note-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .note-date {
+      font-size: 10px;
+      color: var(--text2);
+    }
+
+    .note-del {
+      background: none;
+      border: none;
+      color: var(--text2);
+      font-size: 12px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .note-del:hover {
+      color: var(--red);
+    }
+
+    .note-text {
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .note-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .note-input-row textarea {
+      flex: 1;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: var(--r-sm);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      resize: none;
+      min-height: 60px;
+      transition: border-color .2s;
+    }
+
+    .note-input-row textarea:focus {
+      border-color: var(--accent);
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text2);
+    }
+
+    .empty-state .es-icon {
+      font-size: 40px;
+      margin-bottom: 14px;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--s2);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 12px 18px;
+      border-radius: var(--r-sm);
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all .25s;
+      pointer-events: none;
+      box-shadow: var(--shadow);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── HAMBURGER MOBILE ── */
+    .ham {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .overlay-mob {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .6);
+      z-index: 190;
+    }
+
+    /* ── REGISTER PAGE ── */
+    .reg-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      background: linear-gradient(165deg, var(--s2), var(--s1));
+    }
+
+    .reg-title {
+      font-size: 24px;
+      font-weight: 700;
+      font-family: 'Instrument Serif', serif;
+      margin-bottom: 8px;
+      background: linear-gradient(to right, var(--text), var(--text2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-cycle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid var(--border);
+      background: var(--s3);
+      color: var(--text2);
+      min-width: 90px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-cycle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .badge-cycle.active-sim {
+      background: rgba(45, 216, 122, 0.15);
+      color: var(--green);
+      border-color: rgba(45, 216, 122, 0.4);
+    }
+
+    .badge-cycle.active-nao {
+      background: rgba(245, 86, 86, 0.1);
+      color: var(--red);
+      border-color: rgba(245, 86, 86, 0.3);
+    }
+
+    .badge-cycle.active-deb {
+      background: rgba(91, 110, 245, 0.15);
+      color: var(--accent2);
+      border-color: rgba(91, 110, 245, 0.4);
+    }
+
+    /* Floating Modal for Register */
+    #page-register {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    #page-register.active {
+      display: flex;
+    }
+
+    /* ── DETAIL DRAWER ── */
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -500px;
+      width: min(500px, 100vw);
+      height: 100vh;
+      background: var(--s2);
+      border-left: 1px solid var(--border2);
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      transition: right .3s cubic-bezier(.4, 0, .2, 1);
+      box-shadow: -8px 0 32px rgba(0, 0, 0, .4);
+    }
+
+    .drawer.open {
+      right: 0;
+    }
+
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 299;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s;
+      backdrop-filter: blur(2px);
+    }
+
+    .drawer-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Instrument Serif', serif;
+      line-height: 1.3;
+    }
+
+    .drawer-sub {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 3px;
+    }
+
+    .drawer-close {
+      background: none;
+      border: none;
+      color: var(--text2);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .drawer-close:hover {
+      color: var(--text);
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .drawer-section {
+      margin-bottom: 20px;
+    }
+
+    .drawer-sec-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .9px;
+      font-weight: 600;
+      color: var(--text2);
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .drawer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .drawer-field {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 10px 12px;
+    }
+
+    .drawer-field-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text2);
+      margin-bottom: 4px;
+    }
+
+    .drawer-field-val {
+      font-size: 12.5px;
+      word-break: break-all;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .drawer-field-val.em {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+    }
+
+    .drawer-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.mob-open {
+        transform: translateX(0);
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .ham {
+        display: block;
+      }
+
+      .overlay-mob.show {
+        display: block;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 14px 14px 0;
+      }
+
+      .toolbar {
+        padding: 10px 14px;
+      }
+
+      .table-wrap {
+        padding: 0 14px 14px;
+      }
+
+      .reg-card {
+        margin: 14px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid.cols3 {
+        grid-template-columns: 1fr;
+      }
+
+      .drawer {
+        width: 100vw;
+      }
+
+      .topbar {
+        padding: 12px 14px;
+      }
+    }
+
+    /* ── LOGIN OVERLAY ── */
+    #login-page {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 5000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity .4s ease;
+    }
+
+    .login-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      padding: 32px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .login-field {
+      margin-bottom: 20px;
+    }
+
+    .login-field label {
+      display: block;
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 6px;
+    }
+
+    .login-field input {
+      width: 100%;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    /* ── CLOUD STATUS ── */
+    .cloud-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--text2);
+      padding: 4px 8px;
+      background: var(--s2);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gray);
+    }
+
+    .status-dot.online {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    .status-dot.offline {
+      background: var(--red);
+    }
+
+    .status-dot.syncing {
+      background: var(--yellow);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0.4;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.4;
+      }
+    }
+
+    /* CUSTOM CONFIRM MODAL */
+    .confirm-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+      .confirm-icon {
+        font-size: 40px;
+        margin-bottom: 16px;
+      }
+
+      .confirm-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 8px;
+      }
+
+      .confirm-text {
+        font-size: 14px;
+        color: var(--text2);
+        margin-bottom: 24px;
+        line-height: 1.5;
+      }
+
+      /* PRINT / REPORT STYLES */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+
+        #printArea,
+        #printArea * {
+          visibility: visible;
+        }
+
+        #printArea {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          color: #000 !important;
+          background: #fff !important;
+        }
+
+        .sidebar,
+        .topbar,
+        .toolbar,
+        .nav-item,
+        .btn,
+        .tabs-container,
+        .stats-grid,
+        .topbar-right,
+        .confirm-card,
+        .modal-overlay {
+          display: none !important;
+        }
+
+        table {
+          border-collapse: collapse;
+          width: 100%;
+          font-size: 10px;
+        }
+
+        th,
+        td {
+          border: 1px solid #ddd;
+          padding: 6px;
+          text-align: left;
+          color: #000 !important;
+        }
+
+        th {
+          background: #f5f5f5 !important;
+        }
+
+        .badge,
+        .pill {
+          background: transparent !important;
+          color: #000 !important;
+          border: 1px solid #ddd !important;
+          padding: 2px 4px !important;
+          font-size: 9px !important;
+        }
+
+        .print-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 2px solid #000;
+          padding-bottom: 10px;
+          margin-bottom: 20px;
+        }
+
+        .print-footer {
+          margin-top: 30px;
+          border-top: 1px solid #ddd;
+          padding-top: 10px;
+          font-size: 10px;
+          text-align: center;
+        }
+
+        .print-sig {
+          margin-top: 50px;
+          text-align: right;
+          font-weight: bold;
+        }
+      }
+  </style>
+</head>
+
+<body>
+  <!-- LOGIN PAGE -->
+  <div id="login-page">
+    <div class="login-card">
+      <div style="text-align:center; margin-bottom:24px;">
+        <div class="logo-mark" style="width:50px; height:50px; margin:0 auto 12px; font-size:24px;">W</div>
+        <div class="logo-text" style="font-size:18px;">ContecControl<small>Acesso Restrito</small></div>
+      </div>
+      <div id="login-form">
+        <div class="login-field">
+          <label>E-mail de Acesso</label>
+          <input type="email" id="login-email" value="jwicsg@gmail.com">
+        </div>
+        <div class="login-field">
+          <label>Sua Senha</label>
+          <input type="password" id="login-pass" value="joao1234">
+        </div>
+        <button class="btn btn-primary" id="loginBtn" style="width:100%; padding:14px; font-weight:600;"
+          onclick="handleLogin()">🚀 Entrar e Sincronizar</button>
+        <p id="login-error" style="color:var(--red); font-size:12px; margin-top:12px; text-align:center; display:none;">
+        </p>
+      </div>
+      <div style="margin-top:20px; font-size:10px; color:var(--text2); text-align:center;">
+        ☁️ Conectado ao Firebase (contec-25a58)
+      </div>
+    </div>
+  </div>
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">W</div>
+      <div class="logo-text">ContecControl<small>Escritório de Contabilidade</small></div>
+    </div>
+    <div class="nav-items">
+      <div
+        style="font-size: 9px; color: var(--text2); padding: 5px 15px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">
+        Navegação</div>
+      <button class="nav-item active" id="btn-cat-empresa" onclick="setCategory('empresa')">
+        <span class="nav-icon">🏢</span> Empresas
+      </button>
+      <button class="nav-item" id="btn-cat-pf" onclick="setCategory('pessoa_fisica')">
+        <span class="nav-icon">👤</span> Pessoa Física
+      </button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" data-page="list" onclick="showPage('list')">
+        <span class="nav-icon">📋</span> Lista Principal
+      </button>
+      <button class="nav-item" data-page="stats" onclick="showPage('stats')">
+        <span class="nav-icon">📊</span> Estatísticas
+      </button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" data-page="register" onclick="showPage('register')">
+        <span class="nav-icon">➕</span> Cadastrar Registro
+      </button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" onclick="openModal('fbConfigModal')">
+        <span class="nav-icon">⚙️</span> Configurar Nuvem
+      </button>
+      <button class="nav-item" style="color:var(--orange)" onclick="resetAllEmissions()">
+        <span class="nav-icon">🧹</span> Zerar Mês (Checklists)
+      </button>
+      <button class="nav-item" style="color:var(--red)" onclick="logout()">
+        <span class="nav-icon">🚪</span> Sair do Sistema
+      </button>
+    </div>
+    <div id="user-info"
+      style="padding:10px 15px; font-size:10px; color:var(--text2); border-top:1px solid var(--border);">
+      👤 Logado como: <span id="userEmail" style="color:var(--text)">...</span>
+    </div>
+    <div
+      style="margin-top: auto; padding: 20px 15px; border-top: 1px solid var(--border); background: rgba(0,136,204,0.05);">
+      <div
+        style="font-size: 11px; font-weight: 600; color: #0088cc; margin-bottom: 10px; display: flex; align-items: center; gap: 5px;">
+        ✈️ NOTIFICAÇÕES (TELEGRAM)</div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <label style="font-size: 10px; color: var(--text2);">Bot Token:
+          <input type="password" id="tgToken"
+            style="width: 100%; background: var(--s2); border: 1px solid var(--border); color: var(--text); padding: 4px; border-radius: 4px; font-size: 10px; margin-top: 2px;"
+            onchange="localStorage.setItem('contec_tg_token', this.value)">
+        </label>
+        <label style="font-size: 10px; color: var(--text2);">Seu Chat ID:
+          <input type="text" id="tgChatId"
+            style="width: 100%; background: var(--s2); border: 1px solid var(--border); color: var(--text); padding: 4px; border-radius: 4px; font-size: 10px; margin-top: 2px;"
+            onchange="localStorage.setItem('contec_tg_chatid', this.value)">
+        </label>
+        <button class="btn btn-ghost" style="font-size: 9px; padding: 4px; width: 100%;" onclick="testTelegram()">Testar
+          Alerta</button>
+      </div>
+    </div>
+  </nav>
+  <div class="overlay-mob" id="overlayMob" onclick="closeMobileSidebar()"></div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ══ PAGE: LIST ══ -->
+    <div class="page active" id="page-list">
+      <div class="topbar">
+        <button class="ham"
+          onclick="document.getElementById('sidebar').classList.toggle('mob-open');document.getElementById('overlayMob').classList.toggle('show')">☰</button>
+        <div>
+          <div class="topbar-title">Controle de Parcelamentos</div>
+          <div class="topbar-sub" id="topbarSub">172 empresas cadastradas</div>
+        </div>
+        <div class="topbar-right" style="display:flex; gap:10px;">
+          <button class="btn btn-ghost" onclick="generateReport()"
+            style="border-color:var(--purple); color:var(--purple);">📄 Relatório PDF</button>
+          <button class="btn btn-primary" onclick="showPage('register')">＋ Cadastrar</button>
+        </div>
+      </div>
+
+      <!-- STATS STRIP -->
+      <div class="stats-grid">
+        <div class="stat-card" style="--clr:var(--accent2)">
+          <div class="stat-label">Total</div>
+          <div class="stat-num" id="sv-total">0</div>
+          <div class="stat-sub">empresas</div>
+        </div>
+        <div class="stat-card" style="--clr:var(--cyan)">
+          <div class="stat-label">📱 ZAP</div>
+          <div class="stat-num" id="sv-zap">0</div>
+          <div class="stat-sub">via WhatsApp</div>
+        </div>
+        <div class="stat-card" style="--clr:var(--yellow)">
+          <div class="stat-label">🖨 Impresso</div>
+          <div class="stat-num" id="sv-imp">0</div>
+          <div class="stat-sub">impressos</div>
+        </div>
+        <div class="stat-card" style="--clr:var(--red)">
+          <div class="stat-label">❌ Encerrados</div>
+          <div class="stat-num" id="sv-canc">0</div>
+          <div class="stat-sub">cancelados/liq.</div>
+        </div>
+        <div class="stat-card" style="--clr:var(--green)">
+          <div class="stat-label">📄 Simples</div>
+          <div class="stat-num" id="sv-sim">0</div>
+          <div class="stat-sub">regime simples</div>
+        </div>
+        <div class="stat-card" style="--clr:var(--yellow)">
+          <div class="stat-label">💬 Notas</div>
+          <div class="stat-num" id="sv-notas">0</div>
+          <div class="stat-sub">comentários</div>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 14px 24px 10px;">
+        <div class="tabs-container"
+          style="display: flex; gap: 24px; border-bottom: 1px solid var(--border); padding-bottom: 0px; margin-bottom: 2px;">
+          <button class="tab-btn active" onclick="setQuickFilter('ALL', this)">📋 Todos</button>
+          <button class="tab-btn" onclick="setQuickFilter('PENDING', this)">⏳ Envios Pendentes</button>
+          <button class="tab-btn" onclick="setQuickFilter('PENDING_EMISSION', this)" style="color:var(--yellow)">🟡
+            Guias Pendentes</button>
+          <button class="tab-btn" onclick="setQuickFilter('DONE', this)">✅ Concluídos</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar por empresa, usuário, CNPJ, CPF..."
+              oninput="debounceSearch()">
+          </div>
+          <select id="filterDoc" onchange="applyFilters()">
+            <option value="">Todos os doc. enviado</option>
+            <option value="ZAP">📱 ZAP</option>
+            <option value="ZAP/OK">✅ ZAP/OK</option>
+            <option value="IMPRESSO">🖨 IMPRESSO</option>
+            <option value="IMPRESSO/OK">✅ IMPRESSO/OK</option>
+            <option value="AUTOMATICO">⚙️ AUTOMÁTICO</option>
+            <option value="ZAPREGY">📋 ZAPREGY</option>
+            <option value="ZAPREGY/OK">✅ ZAPREGY/OK</option>
+            <option value="CANCELADO">❌ CANCELADO</option>
+            <option value="RESCINDIDO">🚫 RESCINDIDO</option>
+            <option value="LIQUIDADO">💰 LIQUIDADO</option>
+            <option value="SERVIÇO SUSPENSO">⛔ SERV. SUSPENSO</option>
+            <option value="SERVIÇOS SUSPENSO">⛔ SERVS. SUSPENSO</option>
+            <option value="ENCERRADO">🔒 ENCERRADO</option>
+            <option value="SEM EMIÇÃO">⚠️ SEM EMIÇÃO</option>
+          </select>
+          <select id="filterRegime" onchange="applyFilters()">
+            <option value="">Todos os regimes</option>
+            <option value="SIMPLES">Simples Nacional</option>
+            <option value="NORMAL">Lucro Presumido/Normal</option>
+          </select>
+          <button class="btn btn-ghost"
+            onclick="document.getElementById('searchInput').value='';document.getElementById('filterDoc').value='';document.getElementById('filterRegime').value='';applyFilters()">↺
+            Limpar</button>
+          <div class="result-badge" id="resultCount">172 resultados</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th style="width: 40px;">Check</th>
+            <th onclick="sortBy('empresa')" style="min-width:200px">Empresa / Nome ↕</th>
+            <th onclick="sortBy('cnpj')" style="min-width:140px">CNPJ / CPF ↕</th>
+            <th>WhatsApp</th>
+            <th>Caixa P.</th>
+            <th>Email</th>
+            <th onclick="sortBy('docEnviado')">Doc. Enviado ↕</th>
+            <th>Pesq. Fiscal</th>
+            <th>Parc. Rec</th>
+            <th onclick="sortBy('parPgfn')">Par. PGFN ↕</th>
+            <th>Par. SEFA</th>
+            <th>Par. PREF</th>
+            <th>Par. PREV</th>
+            <th>Par. SIMP</th>
+            <th>Par. PROC</th>
+            <th>Notas</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display:none">
+        <div class="es-icon">🔎</div>
+        <p>Nenhum resultado encontrado.</p>
+      </div>
+    </div>
+
+    <div
+      style="padding:12px 24px;border-top:1px solid var(--border);background:var(--s1);font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center">
+      <span>💼 ContecControl — <span id="footerCount">172</span> registros exibidos | <small>Desenvolvido por João
+          Wictor</small></span>
+      <div style="display:flex; gap:8px">
+        <button class="btn btn-ghost" onclick="document.getElementById('csvInput').click()">⬆ Importar CSV</button>
+        <button class="btn btn-ghost" onclick="exportCSV()">⬇ Exportar CSV</button>
+        <input type="file" id="csvInput" style="display:none" accept=".csv" onchange="importCSV(event)">
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: STATS ══ -->
+  <div class="page" id="page-stats">
+    <div class="topbar">
+      <button class="ham"
+        onclick="document.getElementById('sidebar').classList.toggle('mob-open');document.getElementById('overlayMob').classList.toggle('show')">☰</button>
+      <div>
+        <div class="topbar-title">Estatísticas</div>
+        <div class="topbar-sub">Visão geral dos dados</div>
+      </div>
+    </div>
+    <div style="padding:24px;flex:1;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start">
+      <div
+        style="background:var(--s2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;max-width:700px">
+        <div style="font-size:14px;font-weight:600;font-family:'Instrument Serif',serif;margin-bottom:16px">📊
+          Distribuição por Documento Enviado</div>
+        <div id="statsDocList"></div>
+      </div>
+    </div>
+  </div>
+  <!-- ══ PAGE: REGISTER ══ -->
+  <!-- ══ PAGE: REGISTER (MODAL) ══ -->
+  <div class="page" id="page-register" onclick="if(event.target===this)showPage('list')">
+    <div class="reg-card" style="max-width:820px; width: 100%; position: relative;" id="regForm">
+      <button class="modal-close" style="position: absolute; top: 20px; right: 20px;"
+        onclick="showPage('list')">✕</button>
+      <div class="reg-title">Novo Registro</div>
+      <div class="reg-sub" style="margin-bottom: 24px; font-size: 13px; color: var(--text2);">Preencha os campos abaixo
+        para adicionar um novo registro ao sistema.</div>
+
+      <div class="form-grid">
+        <div class="field-title">📑 Tipo de Cadastro</div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Categoria *</label>
+          <select id="reg-category" onchange="adjustFormLabels()"
+            style="background: var(--s3); border-color: var(--border2); height: 42px;">
+            <option value="empresa">🏢 Empresa</option>
+            <option value="pessoa_fisica">👤 Pessoa Física</option>
+          </select>
+        </div>
+
+        <div class="field-title">🏢 Dados Principais</div>
+        <div class="field" style="grid-column:1/-1">
+          <label id="lbl-empresa">Empresa *</label>
+          <input type="text" id="reg-empresa" placeholder="Nome completo" style="height: 42px;">
+        </div>
+        <div class="field">
+          <label>Nome do Usuário *</label>
+          <input type="text" id="reg-usuario" placeholder="Nome do responsável">
+        </div>
+        <div class="field">
+          <label id="lbl-cnpj">CNPJ *</label>
+          <input type="text" id="reg-cnpj" placeholder="00000000000000">
+        </div>
+        <div class="field">
+          <label>WhatsApp</label>
+          <input type="text" id="reg-whatsapp" placeholder="Ex: 5591988887777">
+        </div>
+        <div class="field">
+          <label>Caixa Postal</label>
+          <input type="text" id="reg-caixa" placeholder="Ex: OK ou Senha">
+        </div>
+
+        <div class="field-sep" style="grid-column:1/-1"></div>
+        <div class="field-title">💳 Status e Parcelamentos</div>
+
+        <div class="field">
+          <label>Documento Enviado</label>
+          <div class="badge-cycle" id="reg-doc" onclick="cycleRegField('reg-doc')">NÃO</div>
+        </div>
+        <div class="field">
+          <label>Pesquisa Fiscal</label>
+          <div class="badge-cycle" id="reg-fiscal" onclick="cycleRegField('reg-fiscal')">NÃO</div>
+        </div>
+        <div class="field">
+          <label>Parc. Receita</label>
+          <div class="badge-cycle" id="reg-receita" onclick="cycleRegField('reg-receita')">NÃO</div>
+        </div>
+        <div class="field">
+          <label>Par. PGFN</label>
+          <div class="badge-cycle" id="reg-pgfn" onclick="cycleRegField('reg-pgfn')">NÃO</div>
+        </div>
+        <div class="field">
+          <label>Par. SEFA</label>
+          <div class="badge-cycle" id="reg-sefa" onclick="cycleRegField('reg-sefa')">NÃO</div>
+        </div>
+        <div class="field">
+          <label>Par. PREFEITURA</label>
+          <div class="badge-cycle" id="reg-prefeitura" onclick="cycleRegField('reg-prefeitura')">NÃO</div>
+        </div>
+        <div class="field">
+          <label>Par. PREVIDENCIARIO</label>
+          <div class="badge-cycle" id="reg-previdenciario" onclick="cycleRegField('reg-previdenciario')">NÃO</div>
+        </div>
+        <div class="field">
+          <label>Par. SIMPLES NACIONAL</label>
+          <div class="badge-cycle" id="reg-simples" onclick="cycleRegField('reg-simples')">NÃO</div>
+        </div>
+        <div class="field">
+          <label>Par. Procuradoria</label>
+          <div class="badge-cycle" id="reg-procuradoria" onclick="cycleRegField('reg-procuradoria')">NÃO</div>
+        </div>
+
+        <div class="field-sep" style="grid-column:1/-1"></div>
+        <div class="field-title">📧 Outros</div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Email</label>
+          <input type="text" id="reg-email" placeholder="email@exemplo.com">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Observação</label>
+          <textarea id="reg-obs" rows="3" placeholder="Informações adicionais..."></textarea>
+        </div>
+      </div>
+      <div
+        style="margin-top:32px;padding-top:20px;border-top:1px solid var(--border);display:flex;gap:12px;justify-content:flex-end">
+        <button class="btn btn-ghost" style="padding: 10px 24px;" onclick="showPage('list')">Cancelar</button>
+        <button class="btn btn-primary" style="padding: 10px 32px; font-weight: 600;" onclick="registerNew()">✅
+          Cadastrar Registro</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- ══ DETAIL DRAWER ══ -->
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title" id="drawerTitle"></div>
+        <div class="drawer-sub" id="drawerSub"></div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="drawerContent"></div>
+    <div class="drawer-footer">
+      <button class="btn btn-primary" onclick="openEdit(drawerOpen)">✏️ Editar</button>
+      <button class="btn btn-ghost" onclick="openNotes(drawerOpen)">💬 Notas</button>
+      <button class="btn btn-ghost" onclick="closeDrawer()">Fechar</button>
+    </div>
+  </div>
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+  <!-- ══ EDIT MODAL ══ -->
+  <div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
+    <div class="modal" style="max-width:850px">
+      <div class="modal-header">
+        <div class="modal-title" id="editTitle">Editar Registro</div>
+        <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+      </div>
+      <div class="form-grid">
+        <div class="field-title">🏢 Dados Básicos</div>
+        <div class="field" style="grid-column:1/-1"><label>Nome / Razão Social</label><input id="ef-empresa"
+            type="text"></div>
+        <div class="field"><label>Usuário / Responsável</label><input id="ef-usuario" type="text"></div>
+        <div class="field"><label>CNPJ / CPF</label><input id="ef-cnpj" type="text"></div>
+        <div class="field"><label>WhatsApp</label><input id="ef-whatsapp" type="text" placeholder="Ex: 5591988887777">
+        </div>
+        <div class="field"><label>Caixa Postal</label><input id="ef-caixa" type="text"></div>
+        <div class="field"><label>Email</label><input id="ef-email" type="text"></div>
+
+        <div class="field-sep" style="grid-column:1/-1"></div>
+        <div class="field-title">💳 Parcelamentos e Status</div>
+
+        <div class="field"><label>Doc. Enviado</label><select id="ef-doc"></select></div>
+        <div class="field"><label>Pesq. Fiscal</label><select id="ef-pesq"></select></div>
+        <div class="field"><label>Parc. Receita</label><select id="ef-rec"></select></div>
+        <div class="field"><label>Par. PGFN</label><input id="ef-pgfn" type="text"
+            placeholder="NÃO ou número do processo"></div>
+        <div class="field"><label>Par. SEFA</label><select id="ef-sefa"></select></div>
+        <div class="field"><label>Par. PREF</label><select id="ef-pref"></select></div>
+        <div class="field"><label>Par. PREV</label><select id="ef-prev"></select></div>
+        <div class="field"><label>Par. SIMP</label><select id="ef-sim"></select></div>
+        <div class="field"><label>Par. PROC</label><select id="ef-proc"></select></div>
+
+        <div class="field-sep" style="grid-column:1/-1"></div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Observações</label>
+          <textarea id="ef-obs" rows="3"></textarea>
+        </div>
+        <div class="modal-actions" style="justify-content: space-between;">
+          <button class="btn btn-ghost" style="color: var(--red); border-color: rgba(245, 86, 86, 0.2);"
+            onclick="deleteRecord(editingId)">🗑 Excluir Registro</button>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-ghost" onclick="closeModal('editModal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveEdit()">💾 Salvar Alterações</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ NOTES MODAL ══ -->
+  <div class="modal-overlay" id="notesModal" onclick="if(event.target===this)closeModal('notesModal')">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title" id="notesTitle">💬 Notas</div>
+          <button class="modal-close" onclick="closeModal('notesModal')">✕</button>
+        </div>
+        <div id="notesList"></div>
+        <div>
+          <div class="field">
+            <label>Nova Nota / Comentário</label>
+            <textarea id="noteText" placeholder="Digite sua anotação aqui..." rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeModal('notesModal')">Fechar</button>
+          <button class="btn btn-primary" onclick="addNote()">➕ Adicionar Nota</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- ══ AREA DE IMPRESSÃO (INVISÍVEL NA TELA) ══ -->
+  <div id="printArea" style="display:none"></div>
+
+  <!-- ══ CUSTOM CONFIRM MODAL ══ -->
+  <div class="modal-overlay" id="confirmModal" style="z-index: 9999;">
+    <div class="confirm-card">
+      <div class="confirm-icon">🚀</div>
+      <div class="confirm-title" id="confirmTitle">Guia Emitida!</div>
+      <div class="confirm-text" id="confirmText">Deseja avisar o cliente sobre a emissão desta guia agora?</div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModal('confirmModal')">Agora não</button>
+        <button class="btn btn-primary" style="flex:1; background:var(--green); border-color:var(--green);"
+          id="confirmActionBtn">Sim, Avisar!</button>
+      </div>
+    </div>
+  </div>
+  <!-- ══ PARCELA DETAILS MODAL ══ -->
+  <div class="modal-overlay" id="parcModal" onclick="if(event.target===this)closeModal('parcModal')">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <div class="modal-title" id="parcModalTitle">Detalhamento do Parcelamento</div>
+        <button class="modal-close" onclick="closeModal('parcModal')">✕</button>
+      </div>
+      <div class="modal-grid" style="grid-template-columns: 1fr 1fr; gap:15px; padding:20px;">
+        <div class="field"><label>Total de Parcelas</label><input type="number" id="pi-total" placeholder="Ex: 30">
+        </div>
+        <div class="field"><label>Nº Parcela Atual</label><input type="number" id="pi-paid" placeholder="Ex: 04"></div>
+        <div class="field"><label>Qtd. Atrasadas</label><input type="number" id="pi-numOverdue" placeholder="Ex: 02"
+            oninput="document.getElementById('pi-overdue-row').style.display = this.value > 0 ? 'block' : 'none'"></div>
+        <div class="field"><label>Vencimento Guia</label><input type="text" id="pi-dueDate"
+            placeholder="Ex: 20/04/2026"></div>
+        <div class="field" style="grid-column: 1/-1" id="pi-overdue-row"><label>Datas das Parcelas em
+            Atraso</label><input type="text" id="pi-overdue" placeholder="Ex: 12/2025 e 03/2026"
+            style="color:var(--red)"></div>
+        <div class="field" style="grid-column: 1/-1"><label>Mês/Ano Ref. Atual</label><input type="text" id="pi-date"
+            placeholder="Ex: 04/2026"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('parcModal')">Cancelar</button>
+        <button class="btn btn-primary" id="saveParcInfoBtn">💾 Salvar Dados</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="fbConfigModal" onclick="if(event.target===this)closeModal('fbConfigModal')">
+    <div class="modal" style="max-width:600px">
+      <div class="modal-header">
+        <div class="modal-title">☁️ Configurando sua Nuvem Própria</div>
+        <button class="modal-close" onclick="closeModal('fbConfigModal')">✕</button>
+      </div>
+      <div style="padding:15px 0;">
+        <div
+          style="background:rgba(0,136,204,0.1); border:1px solid #0088cc; padding:15px; border-radius:12px; margin-bottom:20px;">
+          <h4 style="color:#0088cc; margin-bottom:10px; font-size:14px;">📝 Como conseguir o código abaixo?</h4>
+          <ol style="font-size:12px; line-height:1.6; padding-left:20px; color:var(--text);">
+            <li>Entre no <a href="https://console.firebase.google.com/" target="_blank"
+                style="color:var(--accent2); font-weight:700;">Console do Firebase</a> e crie um projeto.</li>
+            <li>No menu lateral, vá em <b>Build > Realtime Database</b> e clique em "Criar Banco".</li>
+            <li>Nas regras do banco (Rules), mude <b>"read": false</b> para <b>true</b>.</li>
+            <li>Nas <b>Configurações do Projeto (Engrenagem)</b>, clique no ícone <b>&lt;/&gt;</b> para criar um App
+              Web.</li>
+            <li>Copie o código que começa com <code>{ apiKey: ... }</code> e cole abaixo.</li>
+          </ol>
+        </div>
+        <textarea id="fb-config-input" rows="8"
+          style="width:100%; background:var(--s1); border:1px solid var(--border); color:var(--text); padding:12px; border-radius:8px; font-family:monospace; font-size:11px;"
+          placeholder='Exemplo:
+{
+  "apiKey": "AIzaSy...",
+  "authDomain": "projeto.firebaseapp.com",
+  "databaseURL": "https://projeto.firebaseio.com",
+  ...
+}'></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('fbConfigModal')">Agora não</button>
+        <button class="btn btn-primary" onclick="saveFirebaseConfig()">💾 Salvar e Conectar</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="zapModal" onclick="if(event.target===this)closeModal('zapModal')">
+    <div class="modal" style="max-width: 450px;">
+      <div class="modal-header">
+        <div class="modal-title">🚀 Enviar WhatsApp — <span id="zapTargetName"></span></div>
+        <button class="modal-close" onclick="closeModal('zapModal')">✕</button>
+      </div>
+      <div class="form-grid" style="display:block; padding: 15px 0;">
+        <div class="field" style="margin-bottom:15px;">
+          <label>📱 Número do WhatsApp</label>
+          <input type="text" id="zapTargetPhone" placeholder="Ex: 5591988887777">
+          <small style="font-size:10px; color:var(--text2);">Sempre inclua o 55 + DDD + Número</small>
+        </div>
+        <div class="field" style="margin-bottom:15px;">
+          <label>📝 Mensagem Personalizada</label>
+          <textarea id="zapCustomMsg" rows="6" placeholder="Escreva a mensagem aqui..."></textarea>
+          <small style="font-size:10px; color:var(--text2);">Esta mensagem ficará salva para esta empresa.</small>
+        </div>
+        <div
+          style="display:flex; align-items:center; gap:10px; margin-bottom:20px; background:var(--s1); padding:10px; border-radius:8px;">
+          <input type="checkbox" id="zapAutoDone" checked style="width:18px; height:18px;">
+          <label for="zapAutoDone" style="font-size:12px; cursor:pointer;">Marcar empresa como "CONCLUÍDO" ao
+            enviar</label>
+        </div>
+      </div>
+      <div class="modal-actions" style="flex-direction:column; gap:10px;">
+        <button class="btn btn-primary" style="width:100%; padding:14px;" onclick="confirmAndSendZap()">🚀 Enviar para
+          WhatsApp Web</button>
+        <button class="btn btn-ghost" style="width:100%;" onclick="copyZapMsg()">📋 Apenas Copiar Mensagem</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+  <script>
+    const RAW = [{ "EMPRESA": "A C CARDOSO LTDA", "NOME DO USUÁRIO": "ALAN CARDOSO", "CNPJ": "23920417000178", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "015415883", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "A C MEDEIROS CARDOSO LTDA", "NOME DO USUÁRIO": "Vanda Cardoso", "CNPJ": "43682214000106", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "50803794216", "SENHA SIMPLES": "820936586247", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "ANANILDO MOTO PECAS LTDA", "NOME DO USUÁRIO": "Ananildo do Socorro", "CNPJ": "45869874000118", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "SERVIÇO SUSPENSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "00216466270", "SENHA SIMPLES": "501184916310", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "A. G. NUNES MIRANDA DROGARIA LTDA(01_ Mocajuba)", "NOME DO USUÁRIO": "Vanda Maria", "CNPJ": "15594530000182", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "012009234  012009396LIQ", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "05074958296", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1235" }, { "EMPRESA": "AGROINDUÚSTRIA FABRICA DA VIDA", "NOME DO USUÁRIO": "Vaneza Fernandes", "CNPJ": "54557909000174", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "SIM", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "OK", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "C DO S P MONTEIRO", "NOME DO USUÁRIO": "CLEITON DO S PRESTES MONTEIRO", "CNPJ": "59942283000133", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "99223104220", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "A DO S P FARIAS *", "NOME DO USUÁRIO": "Arlete Farias", "CNPJ": "21193238000150", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "46284966253", "SENHA SIMPLES": "828424909686", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "A C DOS REIS SERVIÇOES LTDA", "NOME DO USUÁRIO": "VALDILENY DA SILVA RAMOS", "CNPJ": "51242932000181", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "SIM", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "00989678270", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "A DOS S SILVA E SILVA", "NOME DO USUÁRIO": "Anderson Silva", "CNPJ": "10550696000183", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "98492004215", "SENHA SIMPLES": "567615971350", "SENHA SEFA": "" }, { "EMPRESA": "A H MARQUES LTDA MTZ", "NOME DO USUÁRIO": "Álvaro Hungria Marques", "CNPJ": "30508852000155", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "SIM", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "04201031128", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "ANDREA VELOSO GONÇALVES", "NOME DO USUÁRIO": "ANDREA VELOSO GONÇALVES", "CNPJ": "25134972000108", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "NÃO", "REGIME 2025": "SIMPLES", "CPF": "70025770268", "SENHA SIMPLES": "479603368524", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "A S C CASTRO", "NOME DO USUÁRIO": "Antônio Castro", "CNPJ": "03519263000108", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "29305268234", "SENHA SIMPLES": "576793753177", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "A T CARDOSO RODRIGUES LTDA", "NOME DO USUÁRIO": "Alderlan Cardoso Rodrigues", "CNPJ": "39303016000109", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "SERVIÇO SUSPENSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "010268167", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "00825626285", "SENHA SIMPLES": "500378826106", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "A VIANA DOS REIS", "NOME DO USUÁRIO": "Alzenira Viana dos Reis", "CNPJ": "04823999000120", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "CANCELADO", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "NÃO", "REGIME 2025": "SIMPLES", "CPF": "17239427234", "SENHA SIMPLES": "786876674314", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "A P CORPORAÇÃO LTDA", "NOME DO USUÁRIO": "augusto", "CNPJ": "40045744000147", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "00216090202", "CPF": "998727746699", "SENHA SIMPLES": "Contec1234", "SENHA SEFA": "" }, { "EMPRESA": "A QUARESMA CARDOSO DROGARIA(01_soure)", "NOME DO USUÁRIO": "Vanda Maria", "CNPJ": "09061521000123", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "DÉBITO", "PAR.PGFN": "014427554 014428283 014428709", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "OK", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "50803794215", "CPF": "NORMAL", "SENHA SIMPLES": "Cnpj1234", "SENHA SEFA": "" }, { "EMPRESA": "A QUARESMA CARDOSO - ME", "NOME DO USUÁRIO": "Alcinaldo Quaresma Cardoso", "CNPJ": "03813139000142", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "OK", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "43043330200", "SENHA SIMPLES": "541042954014", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "A DO SOCORRO BRABO DOS SANTOS LTDA", "NOME DO USUÁRIO": "Vanda Maria", "CNPJ": "27340224000107", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "OK", "PARC.RECEITA": "NÃO", "PAR.PGFN": "014587989 014587988", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "OK", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "63601494272", "CPF": "", "SENHA SIMPLES": "Cnpj1234", "SENHA SEFA": "" }, { "EMPRESA": "ACAI CAMETAENSE INDUSTRIA E COMERCIO LTDA", "NOME DO USUÁRIO": "Lucas Fernandes", "CNPJ": "38.285.872/0001-16", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "CANCELADO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "ACAI DE CAMETA AGROINDUSTRIAL DA AMAZONIA LTDA", "NOME DO USUÁRIO": "SYLVIO BERNARDES BRAGA", "CNPJ": "41838469000181", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "011215737", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "ALBA PINTO GAIA   (SIMPLES)", "NOME DO USUÁRIO": "Alba Gaia", "CNPJ": "08992154000119", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "SERVIÇOS SUSPENSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "73532207249", "SENHA SIMPLES": "086079581259", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "ALDEIA INDUSTRIA DATAPLACEHOLDER COMERCIO DE GELO LTDA", "NOME DO USUÁRIO": "Antônio Portugal", "CNPJ": "40023098000117", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "96311568772", "SENHA SIMPLES": "100830277071", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "ALEIXO AUTO CENTER LTDA", "NOME DO USUÁRIO": "Aleixo Trindade", "CNPJ": "41451687000169", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "01334513210", "SENHA SIMPLES": "743715879729", "SENHA SEFA": "Cnpj1235" }, { "EMPRESA": "AMIRAILDES", "NOME DO USUÁRIO": "Amiraildes", "CNPJ": "09617111000116", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "15318888", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "70416982387", "SENHA SIMPLES": "040197884887", "SENHA SEFA": "" }, { "EMPRESA": "ANDERSON BARROSO PANTOJA", "NOME DO USUÁRIO": "ANDERSON BARROSO PANTOJA", "CNPJ": "54.424.255/0001-00", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "ATACAREJO CEDRO DO LIBANO 3 COMERCIO EM GERAL LTDA", "NOME DO USUÁRIO": "Valdemar Portilho", "CNPJ": "11737211000128", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "014558437 014558746  014558827", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "ATACAREJO CEDRO LIBANO2 COMERCIO EM GERAL LTDA", "NOME DO USUÁRIO": "Valdemar Portilho", "CNPJ": "45110606000118", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "AUTOMATICO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "AURORA COMÉRCIO DATAPLACEHOLDER SERVIÇOS EM GERAL LTDA", "NOME DO USUÁRIO": "José Siqueira", "CNPJ": "06024835000168", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "73093858291", "SENHA SIMPLES": "403188738406", "SENHA SEFA": "" }, { "EMPRESA": "AUTO ESCOLA", "NOME DO USUÁRIO": "Jaciely", "CNPJ": "09053540000108", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "61025143272", "CPF": "302697243247", "SENHA SIMPLES": "Melo2017", "SENHA SEFA": "" }, { "EMPRESA": "B15 COMERCIO DE MAQUINAS E MOTORES EIRELI", "NOME DO USUÁRIO": "Wellington", "CNPJ": "35941036000154", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "RESCINDIDO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "80513425468", "SENHA SIMPLES": "263644929945", "SENHA SEFA": "" }, { "EMPRESA": "BARBOSA BARRA SERVIÇOS DE DIAGNOSTICOS EIRELI", "NOME DO USUÁRIO": "Eleonora Rodrigues", "CNPJ": "10701807000105", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "010876717 010876685", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "BASTOS DATAPLACEHOLDER RODRIGUES", "NOME DO USUÁRIO": "Selma Vasconcelos", "CNPJ": "05924970000105", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "14787377272", "SENHA SIMPLES": "130783839809", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "B G RODRIGUES COMERCIO DATAPLACEHOLDER SERVIÇOS ELETRICOS", "NOME DO USUÁRIO": "Valdilene", "CNPJ": "28996336000175", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "14043212", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "C DO S P MONTEIRO", "NOME DO USUÁRIO": "CLEITON DO S PRESTES MONTEIRO", "CNPJ": "59942283000133", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "99223104220", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "CAFE DATAPLACEHOLDER BISTRO LTDA (MATRIZ)", "NOME DO USUÁRIO": "Henrique Paixão", "CNPJ": "35497278000109", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "AUTOMATICO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "01833619200", "CPF": "", "SENHA SIMPLES": "Contec1234", "SENHA SEFA": "" }, { "EMPRESA": "C M FREITAS DE MORAES", "NOME DO USUÁRIO": "Carlos Messias*", "CNPJ": "27903323000141", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "RESCINDIDO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "68489811253", "SENHA SIMPLES": "509478298422", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "CARRIJO DATAPLACEHOLDER LONGO LTDA", "NOME DO USUÁRIO": "MARILIA", "CNPJ": "22653936000154", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "11734495LIQ", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "CALDAS COMERCIO", "NOME DO USUÁRIO": "Neima Caldas", "CNPJ": "06170456000186", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "58289291253", "SENHA SIMPLES": "315983100362", "SENHA SEFA": "" }, { "EMPRESA": "CASA DA RACAO DATAPLACEHOLDER EMPREENDIMENTOS LTDA", "NOME DO USUÁRIO": "José Emerson", "CNPJ": "37247231000104", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "02471459471", "SENHA SIMPLES": "081932442694", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "CASA DO CALDO DATAPLACEHOLDER PIZZARIA SABOR DA TERRA", "NOME DO USUÁRIO": "Henrique Andrade", "CNPJ": "36204682000100", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "013995493 013995492RESC", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "02611960224", "SENHA SIMPLES": "165649378247", "SENHA SEFA": "" }, { "EMPRESA": "CENTRO EDUCACIONAL DE CAMETA", "NOME DO USUÁRIO": "Sheila Benassuly", "CNPJ": "10825125000104", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAPREGY", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "014580980", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "02152388267", "SENHA SIMPLES": "653208878362", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "CIDADE VERDE TRANSPORTE DE URGENCIA DATAPLACEHOLDER EMERGENCIA LTDA", "NOME DO USUÁRIO": "João Batista", "CNPJ": "21458346000108", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "61545260249", "SENHA SIMPLES": "666494911943", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "COOPERATIVA AGROEXTRATIVISTA DO BAIXO TOCANTINS", "NOME DO USUÁRIO": "Ermano dos santos santos", "CNPJ": "57568336000172", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "AUTOMATICO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "CLINICA ULTRA+SAUDE EXCELENCIA EM DIAGNOSTICO", "NOME DO USUÁRIO": "Girley pereira aguiar", "CNPJ": "31768699000168", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "014593857 014593856", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "09573962284", "CPF": "NORMAL", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "DATALINK PROVEDOR DE INTERNET COMERCIO E SERVICOS LTDA", "NOME DO USUÁRIO": "Jeorge", "CNPJ": "15621078000109", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM(RELP)", "PARC.SEFA": "", "DOM.SEFA": "", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "05401650264", "SENHA SIMPLES": "806038732673", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "D B DAMASCENO EIRELI - ME", "NOME DO USUÁRIO": "Daniel Damasceno", "CNPJ": "28777098000107", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "98374230215", "SENHA SIMPLES": "907335648636", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "D. G. POMPEU LTDA", "NOME DO USUÁRIO": "Denilson Gonçalves", "CNPJ": "51081079000163", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "54026407268", "CPF": "009517511200", "SENHA SIMPLES": "Contec1234", "SENHA SEFA": "" }, { "EMPRESA": "D H M CARDOSO", "NOME DO USUÁRIO": "Denise Helena", "CNPJ": "22460894000135", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "72509465287", "SENHA SIMPLES": "423963705072", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "D TRANSPORTE DATAPLACEHOLDER CARGAS LTDA", "NOME DO USUÁRIO": "Nelson Brito", "CNPJ": "17.434.217/0001-02", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "98513354287", "CPF": "377422654304", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "E A DUARTE DE MELO (MTZ)", "NOME DO USUÁRIO": "Elza Agripino", "CNPJ": "27231229000193", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "81170629415", "SENHA SIMPLES": "806038450563", "SENHA SEFA": "Cnpj1233" }, { "EMPRESA": "E B BARRA", "NOME DO USUÁRIO": "Eliane Barra", "CNPJ": "05060552000109", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "52374815234", "SENHA SIMPLES": "923924122233", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "E DA S GAIA", "NOME DO USUÁRIO": "EDSON DA SILVA GAIA", "CNPJ": "31696187000133", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "00500294283", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "E DE LIMA POMPEU- VANDA", "NOME DO USUÁRIO": "Elenilson Pompeu", "CNPJ": "15621073000178", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "012012293 012012239", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "02138416224", "SENHA SIMPLES": "NORMAL", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "E DE S RODRIGUES EIRELI -- ME", "NOME DO USUÁRIO": "Eleonora Rodrigues", "CNPJ": "22247226000124", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "02507694254", "SENHA SIMPLES": "075948519746", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "E  S CONSULTORIA RURAL LTDA", "NOME DO USUÁRIO": "Ermano dos santos santos", "CNPJ": "43.894.448/0001-09", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "69313342200", "SENHA SIMPLES": "415669959329", "SENHA SEFA": "" }, { "EMPRESA": "E N MARQUES", "NOME DO USUÁRIO": "Emanuel Nunes Marques", "CNPJ": "07432380000182", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "44331649253", "SENHA SIMPLES": "095032274366", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "E P DE LIMA", "NOME DO USUÁRIO": "Enzo Lima", "CNPJ": "08874222000145", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "01020009217", "SENHA SIMPLES": "008842872425", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "E P GONCALVES DE MORAES E CIA LTDA", "NOME DO USUÁRIO": "Ester Pantoja Goncalves de Moraes", "CNPJ": "13139644000107", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "SIM", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "35686642249", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "E P G DE MORAES", "NOME DO USUÁRIO": "Ester Pantoja Goncalves de Moraes", "CNPJ": "19122898000107", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "SIM", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "35686642249", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "E SACRAMENTO FREITAS - ME", "NOME DO USUÁRIO": "Edson Sacramento", "CNPJ": "28965008000101", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "90357957253", "SENHA SIMPLES": "045189846009", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "F DE J C VEIGA", "NOME DO USUÁRIO": "Fabiano Veiga", "CNPJ": "05877654000111", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "00485901340", "SENHA SIMPLES": "629132282927", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "F P ALVES LTDA", "NOME DO USUÁRIO": "Flávia Alves", "CNPJ": "47029393000120", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "83715800201", "SENHA SIMPLES": "043724931196", "SENHA SEFA": "" }, { "EMPRESA": "F P MACHADO", "NOME DO USUÁRIO": "Cornélio Machado", "CNPJ": "05443336000142", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "78726000210", "SENHA SIMPLES": "034399827988", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "F W MENDES VASQUES LTDA", "NOME DO USUÁRIO": "FRANCISCO WELITON MENDES VASQUES", "CNPJ": "26118510000151", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "15655075", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "", "DOM.SEFA": "", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "EMPREENDIEMNTO MS LTDA", "NOME DO USUÁRIO": "MARCELO GARCIA DE SOUZA", "CNPJ": "39.728.962/0001-05", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "13304749", "PAR.PGFN": "SIM", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "00616683200", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "FORTE MONTE CARMELO LTDA (MTZ)", "NOME DO USUÁRIO": "Pedro Adamo", "CNPJ": "06051543000114", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "FIEL ENERGIA GENUINAMENTE CAMETAENSE LTDA", "NOME DO USUÁRIO": "Antônio Fiel", "CNPJ": "45129088000184", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "13856838", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "61947008234", "SENHA SIMPLES": "794364671080", "SENHA SEFA": "" }, { "EMPRESA": "FORT CAR MANUTENÇÃO DE AUTOMOVEIS LTDA", "NOME DO USUÁRIO": "Pablo Manoel", "CNPJ": "47245454000196", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "01847382290", "SENHA SIMPLES": "976262145168", "SENHA SEFA": "" }, { "EMPRESA": "FRANCO DATAPLACEHOLDER GONÇALVES", "NOME DO USUÁRIO": "João Antônio", "CNPJ": "06050445000162", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "17034540225", "SENHA SIMPLES": "144875262948", "SENHA SEFA": "" }, { "EMPRESA": "H DATAPLACEHOLDER C WANZELER LTDA", "NOME DO USUÁRIO": "HEDER MENDONÇA WANZELER", "CNPJ": "58400063000115", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "70864560206", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "GMS DISTRIBUIDORA E TRSNAPORTE EIRELI 01", "NOME DO USUÁRIO": "Galdino Medeiros", "CNPJ": "34998738000101", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "44336292272", "SENHA SIMPLES": "506982913398", "SENHA SEFA": "Contec1233" }, { "EMPRESA": "H DATAPLACEHOLDER A PIZZARIA E RESTAURANTE LTDA", "NOME DO USUÁRIO": "HENRIQUE", "CNPJ": "43466495000151", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "HGL SERVIÇOS MEDICOS S/S LTDA", "NOME DO USUÁRIO": "Girley pereira aguiar", "CNPJ": "31768699000168", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "RESCINDIDO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "012164142", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "09573962284", "SENHA SIMPLES": "NORMAL", "SENHA SEFA": "" }, { "EMPRESA": "J. A. CARDOSO LTDA (portel)", "NOME DO USUÁRIO": "Vanda Maria", "CNPJ": "10779260000160 10779260000241", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "DÉBITO", "PAR.PGFN": "014429596 014429870 014429243", "PARC.SIMPLES ": "DÉBITO", "PARC.SEFA": "OK", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "50803794215", "CPF": "NORMAL", "SENHA SIMPLES": "Cnpj1234", "SENHA SEFA": "" }, { "EMPRESA": "J DATAPLACEHOLDER J COMERCIO DE COMBUSTIVEL LTDA", "NOME DO USUÁRIO": "Jairo Tenório", "CNPJ": "18213193000124", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "J A BATISTA DA SILVA", "NOME DO USUÁRIO": "José Alvim", "CNPJ": "10995894000150", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "010446640 010837671 012652439 014109902", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "J DE L MARQUES COMERCIO VAREJISTA", "NOME DO USUÁRIO": "Josias Marques", "CNPJ": "20907923000139", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "79088279268", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "J L MORAES OLIVEIRA", "NOME DO USUÁRIO": "JOSE LUIZ MORAES DE OLIVEIRA", "CNPJ": "15176915000120", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "89494997204", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "J DIVALCI B RODRIGUES", "NOME DO USUÁRIO": "José Divalci", "CNPJ": "14145437000128", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "11601876220", "SENHA SIMPLES": "370818910161", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "J P C COMERCIO E SERVIÇOS LTDA", "NOME DO USUÁRIO": "JOICE PINHEIRO CRUZ", "CNPJ": "45179018000130", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "03484321270", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "J E G BATISTA", "NOME DO USUÁRIO": "José Éder", "CNPJ": "08003016000160", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "J F RIBEIRO - ME", "NOME DO USUÁRIO": "José Farias", "CNPJ": "16.856.154/0001-10", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "41089375204", "CPF": "791868865307", "SENHA SIMPLES": "Cnpj1234", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "J H G TELES LTDA", "NOME DO USUÁRIO": "José Onório", "CNPJ": "04200607000176", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "36201413200", "SENHA SIMPLES": "695563184782", "SENHA SEFA": "" }, { "EMPRESA": "VAREJÃO TEM LTDA", "NOME DO USUÁRIO": "João Paulino Filho", "CNPJ": "09614484000133", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj123456" }, { "EMPRESA": "J P DA CUNHA RODRIGUES SERVIÇOS", "NOME DO USUÁRIO": "JOÃO PAULO DA CUNHA RODRIGUES", "CNPJ": "54908790000137", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "SERVIÇO SUSPENSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "65475674272", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "J Q GONÇALVES LTDA", "NOME DO USUÁRIO": "Johny Gonçalves", "CNPJ": "18320623000107", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "RESCINDIDO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "J S F CALDAS EIRELI", "NOME DO USUÁRIO": "José Sidiney", "CNPJ": "29698405000127", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "70327726253", "SENHA SIMPLES": "933102475293", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "J S MAGAZINE", "NOME DO USUÁRIO": "Selma Sueli Bastos", "CNPJ": "04073822000153", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "14787377272", "SENHA SIMPLES": "859183363882", "SENHA SEFA": "" }, { "EMPRESA": "J V GONÇALVES PRODUTOS FARMACÊUTICOS LTDA", "NOME DO USUÁRIO": "Josias Gonçalves", "CNPJ": "33.583.027/0001-03", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "SERVIÇO SUSPENSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "SIM", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "99535904272", "SENHA SIMPLES": "867477720835", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "J VIANA VANZELER", "NOME DO USUÁRIO": "Jocivan Viana", "CNPJ": "19187114000110", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "61477206272", "SENHA SIMPLES": "402382741800", "SENHA SEFA": "" }, { "EMPRESA": "J WANZELER DE FREITAS", "NOME DO USUÁRIO": "Jomairo Wanzeler", "CNPJ": "10895935000137", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "SERVIÇOS SUSPENSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "DEBITO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "00832031259", "SENHA SIMPLES": "NORMAL", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "JANIO L. BATISTA", "NOME DO USUÁRIO": "Jânio Batista", "CNPJ": "08895870000188", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "SERVIÇOS SUSPENSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "012176827CANC 013279985CANC", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "JOSIANE DE FATIMA GAIA PARA SERVIÇOS", "NOME DO USUÁRIO": "Josiane de Fátima", "CNPJ": "39778385000158", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "012485926", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "50829866272", "CPF": "405684113038", "SENHA SIMPLES": "Cnpj123456", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "JOSE MARIA CALDAS", "NOME DO USUÁRIO": "José Maria Caldas", "CNPJ": "15.736.218/0001-86", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "DÉBITO", "PAR.PGFN": "SIM", "PARC.SIMPLES ": "DÉBITO", "PARC.SEFA": "OK", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "K DO S L MATOS LTDA", "NOME DO USUÁRIO": "Daniel Matos", "CNPJ": "11.079.817/0001-13", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "RESCINDIDO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "87622548200", "SENHA SIMPLES": "686384136066", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "KALIANE LIMA DE SOUZA", "NOME DO USUÁRIO": "Kaliane Lima de Souza", "CNPJ": "37149780000146", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "", "REGIME 2025": "", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "KATIA S. SILVA - ME (MTZ)", "NOME DO USUÁRIO": "Kátia Soares", "CNPJ": "07242158000117", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "84582146368", "SENHA SIMPLES": "950496962963", "SENHA SEFA": "Contec123456" }, { "EMPRESA": "KEILA B. PORTILHO", "NOME DO USUÁRIO": "Keila Portilho", "CNPJ": "11.487.200/0001-37", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "015003857 015092770", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "K N AGRIPINO DE MELO", "NOME DO USUÁRIO": "Kamila Agripino", "CNPJ": "28687488000196", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "02884632344", "CPF": "217988361746", "SENHA SIMPLES": "Cnpj1234", "SENHA SEFA": "" }, { "EMPRESA": "L DO P G PACHECO EIRELI - EPP", "NOME DO USUÁRIO": "Teka Pacheco", "CNPJ": "25405750000174", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "003901170", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "L G DA SILVA CONSTRUTORA LTDA", "NOME DO USUÁRIO": "Ricardo Faleiro", "CNPJ": "47040898000195", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "34386840982", "SENHA SIMPLES": "556019868156", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "L M WANZELER LTDA", "NOME DO USUÁRIO": "Jeorge", "CNPJ": "20369151000129", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "", "DOM.SEFA": "", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "05401667230", "SENHA SIMPLES": "645720226141", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "L. G. EMPREENDIMENTOS LTDA", "NOME DO USUÁRIO": "Luis Gonzaga", "CNPJ": "41533270000145", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "34386840982", "SENHA SIMPLES": "534438221113", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "L. P. PEREIRA CARDOSO", "NOME DO USUÁRIO": "Roberto Cardoso", "CNPJ": "49.614.874/0001-28", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "02069123235", "SENHA SIMPLES": "307689439844", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "L R CADOSO E CARDOSO LTDA", "NOME DO USUÁRIO": "Vanda Cardoso", "CNPJ": "07722799000179 07722799000250", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "50803794216", "SENHA SIMPLES": "442241320084", "SENHA SEFA": "Contec123456" }, { "EMPRESA": "L. R. F. LIMA LTDA", "NOME DO USUÁRIO": "Lucimar Lima", "CNPJ": "11780684000108", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "010885166", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "19576447100", "SENHA SIMPLES": "856687102396", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "M M CONSTRUTORA PEÇAS DE MAQUINAS E MOTORES", "NOME DO USUÁRIO": "MAICON MOACIR PAIXÃO ALVES", "CNPJ": "29214777000130", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "011888938CANC", "PARC.SIMPLES ": "SIM-MEI", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "03536374247", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "M DE F ALVES TAVARES", "NOME DO USUÁRIO": "Valdimir Alves", "CNPJ": "07749761000190", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "14559986215", "SENHA SIMPLES": "468813104499", "SENHA SEFA": "4919Kellem" }, { "EMPRESA": "M DE PAULA DA S. G. MEDEIROS EIRELI", "NOME DO USUÁRIO": "Márcia de Paula", "CNPJ": "31583897000157", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "68036922215", "SENHA SIMPLES": "580901167197", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "M F CALDAS VAREJISTA", "NOME DO USUÁRIO": "Margarida Caldas", "CNPJ": "20824958000104", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "67188818215", "SENHA SIMPLES": "742909686465", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "M. F. W. NUNES LTDA", "NOME DO USUÁRIO": "Maik Fabrício", "CNPJ": "40.086.850/0001-79", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "RESCINDIDO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "01462605206", "CPF": "751203830890", "SENHA SIMPLES": "Cnpj123456", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "M G MEDEIROS EIRELI", "NOME DO USUÁRIO": "Marcelo Medeiros", "CNPJ": "24530992000127", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "RESCINDIDO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "DÉBITO", "PAR.PGFN": "003625757RESC", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "62053027215", "SENHA SIMPLES": "366632923691", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "M G TAVARES DA VEIGA MATRIZ", "NOME DO USUÁRIO": "Gicerda Veiga", "CNPJ": "04147088000120", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "09715169287", "SENHA SIMPLES": "012989861757", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "M J DE F ALVES LTDA", "NOME DO USUÁRIO": "Márcio Alves", "CNPJ": "46791068000137", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "48829820210", "SENHA SIMPLES": "142379572219", "SENHA SEFA": "" }, { "EMPRESA": "M SANTOS GUIMARAES", "NOME DO USUÁRIO": "Marília Santos", "CNPJ": "23936281000194", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "DÉBITO", "PAR.PGFN": "011993460CANC", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "83034684215", "SENHA SIMPLES": "037492692992", "SENHA SEFA": "4919Kellem" }, { "EMPRESA": "M. S. DO A. MONTEIRO LTDA", "NOME DO USUÁRIO": "Éverton Marques", "CNPJ": "09562494000172", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "35689609234", "SENHA SIMPLES": "511974283626", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "MARIA GRACIETE L MARQUES", "NOME DO USUÁRIO": "Maria Graciete", "CNPJ": "21108381000105", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "22895922268", "SENHA SIMPLES": "042396385770", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "MARTE CAMETA AGROPECUARIA LTDA", "NOME DO USUÁRIO": "Jairo Gaia", "CNPJ": "14301597000119", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "97105511249", "SENHA SIMPLES": "115806169395", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "MARIA FURTADO MACHADO DATAPLACEHOLDER CIA LTDA", "NOME DO USUÁRIO": "Cornelio Machado", "CNPJ": "01.271.417/0001-51", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "09071785", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "", "REGIME 2025": "", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "MARTE TUCURUI FERRAGISTA LTDA", "NOME DO USUÁRIO": "Kelen Andressa", "CNPJ": "29651694000109", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "78897432204", "SENHA SIMPLES": "262838605123", "SENHA SEFA": "e-CPF" }, { "EMPRESA": "MAPARA CONCRETO LTDA", "NOME DO USUÁRIO": "JAQUELINE ORIVEIRA BORGES", "CNPJ": "44371423000193", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "72379499288", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "MEDFARMA DATAPLACEHOLDER CONVENIÊNCIA LTDA", "NOME DO USUÁRIO": "Edinaldo", "CNPJ": "49.147.890/0001-58", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "SIM", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "95729194234", "CPF": "95729194234", "SENHA SIMPLES": "364136231064", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "MOCAJUBA MAQUINAS E MOTORES EIRELI", "NOME DO USUÁRIO": "Andreza", "CNPJ": "19484677000170", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "011412197CANC 011539066CANC", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "00854911286", "SENHA SIMPLES": "791868497706", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "N. P. TAVARES", "NOME DO USUÁRIO": "Nelson Pereira", "CNPJ": "10.583.997/0001-03", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "10433869LIQ", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "89854225291", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "N. A. NETO EIRELI", "NOME DO USUÁRIO": "Nicolau Neto", "CNPJ": "97551705000139", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "70845123220", "SENHA SIMPLES": "355842523107", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "N VALENTE DOS SANTOS", "NOME DO USUÁRIO": "NAYARA VALENTE DOS SANTOS", "CNPJ": "10715484000109", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "OK", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "DÉBITO", "PARC.SEFA": "OK", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "01056429240", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "NACIONAL MAQUINAS E MOTORES LTDA", "NOME DO USUÁRIO": "Kelen Andressa", "CNPJ": "06375445000132", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "78897432204", "SENHA SIMPLES": "580095424709", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "O DA SILVA CORREA FILIAL", "NOME DO USUÁRIO": "Oberdan da Silva", "CNPJ": "18.452.046/0001-07", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "81117396215", "SENHA SIMPLES": "063243472973", "SENHA SEFA": "" }, { "EMPRESA": "O DO S C BARRA", "NOME DO USUÁRIO": "Odilon Barra", "CNPJ": "02445028000168", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "37014293249", "SENHA SIMPLES": "041887641338", "SENHA SEFA": "" }, { "EMPRESA": "O M DE SOUZA", "NOME DO USUÁRIO": "Osmarino de Souza", "CNPJ": "04451294000129", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "30281270244", "SENHA SIMPLES": "993735440687", "SENHA SEFA": "" }, { "EMPRESA": "ODIVAL ANDRADE DOS SANTOS", "NOME DO USUÁRIO": "Odival Andrade", "CNPJ": "34.861.997/0001-96", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "09679421287", "CPF": "280233188846", "SENHA SIMPLES": "Cnpj1234", "SENHA SEFA": "" }, { "EMPRESA": "P GALINDO DE MELO", "NOME DO USUÁRIO": "Paulino Galindo", "CNPJ": "24302460000132", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "009118938 011361251 LIQ", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "66167850410", "SENHA SIMPLES": "911522255716", "SENHA SEFA": "Cnpj1236" }, { "EMPRESA": "P F TORRES", "NOME DO USUÁRIO": "Patrício Torres", "CNPJ": "18345014000102", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "01062532201", "SENHA SIMPLES": "139883144915", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "P M P DE CARVALHO LTDA", "NOME DO USUÁRIO": "Pablo Manoel", "CNPJ": "35751217000118", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "01847382290", "SENHA SIMPLES": "068058692922", "SENHA SEFA": "Scbazevedo1233" }, { "EMPRESA": "P N FERNANDES CONVENIENCIA LTDA", "NOME DO USUÁRIO": "Pedro Neves", "CNPJ": "27712308000116", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "PANIFICADORA DATAPLACEHOLDER MERCADINHO MANANCIAL LTDA", "NOME DO USUÁRIO": "Mizaque", "CNPJ": "50435769000100", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "59940271204", "SENHA SIMPLES": "300201389535", "SENHA SEFA": "" }, { "EMPRESA": "PET SHOP FOCINHO GELADO LTDA", "NOME DO USUÁRIO": "Herica Lorrana/ Diego", "CNPJ": "22.061.835/0001-94", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "01673649289", "SENHA SIMPLES": "341750609022", "SENHA SEFA": "" }, { "EMPRESA": "POLYSAM CENTRO DE MANUT. DE AUTOMOVEL", "NOME DO USUÁRIO": "Poliana", "CNPJ": "15742540000118", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "01019382252", "SENHA SIMPLES": "859183201637", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "PRINCESS MODAS LTDA *", "NOME DO USUÁRIO": "Alana Patrícia", "CNPJ": "36450268000172", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "89326431215", "SENHA SIMPLES": "238762613462", "SENHA SEFA": "" }, { "EMPRESA": "QUARESMA DATAPLACEHOLDER CARDOSO LTDA", "NOME DO USUÁRIO": "Paula Carvalho", "CNPJ": "05139086000151", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "11513478LIQ", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "43043330200", "SENHA SIMPLES": "670602355660", "SENHA SEFA": "" }, { "EMPRESA": "R B DAMASCENO EIRELI - ME", "NOME DO USUÁRIO": "Renata Damasceno", "CNPJ": "28.759.562/0001-32", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "92729452249", "CPF": "583397275470", "SENHA SIMPLES": "RB287595", "SENHA SEFA": "" }, { "EMPRESA": "R DE CASTRO VALENTE (SIGMA)", "NOME DO USUÁRIO": "Rosilene de Castro", "CNPJ": "20329307000148", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "40049647253", "SENHA SIMPLES": "746211135531", "SENHA SEFA": "" }, { "EMPRESA": "R LOPES BARRA MTZ CAMETA", "NOME DO USUÁRIO": "Reinaldo Lopes", "CNPJ": "63.885.768/0001-00", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO/OK", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "R M PORTILHO", "NOME DO USUÁRIO": "Robson Portilho", "CNPJ": "27.297.692/0001-38", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "82393958215", "CPF": "000734528980", "SENHA SIMPLES": "Cnpj1234", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "R M RODRIGUES FRANCO", "NOME DO USUÁRIO": "Raimundo Miguel", "CNPJ": "09284171000164", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "SERVIÇO SUSPENSO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "DÉBITO", "PAR.PGFN": "12816297 13285672", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "RONILDO ALVES DA SILVA", "NOME DO USUÁRIO": "RONILDO ALVES DA SILVA", "CNPJ": "43098650000124", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "014390578", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "R P GARCIA", "NOME DO USUÁRIO": "Ranolfo Garcia", "CNPJ": "39.405.383/0001-13", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "05169272219", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "R V ALVES", "NOME DO USUÁRIO": "Rosinei Alves", "CNPJ": "25082121000150", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "60543680282", "SENHA SIMPLES": "967162637196", "SENHA SEFA": "" }, { "EMPRESA": "RENATO B DAMASCENO DATAPLACEHOLDER CIALTDA - ABAETETUBA", "NOME DO USUÁRIO": "Renato Damasceno", "CNPJ": "29448550000150", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "014690218 014756249", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "05050136148", "SENHA SIMPLES": "680586784488", "SENHA SEFA": "Contec1234" }, { "EMPRESA": "ROGERIO DA COSTA OLIVEIRA", "NOME DO USUÁRIO": "Rogério da Costa", "CNPJ": "14180684000165", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "RESCINDIDO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "01454452242", "SENHA SIMPLES": "715453998229", "SENHA SEFA": "" }, { "EMPRESA": "ROSANGELA NEVES FARIAS - ME", "NOME DO USUÁRIO": "Rosangela Neves", "CNPJ": "16526384000110", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "63345064200", "SENHA SIMPLES": "994541918378", "SENHA SEFA": "" }, { "EMPRESA": "RESTO CAAMUTA LTDA", "NOME DO USUÁRIO": "João Vitor Trindade Cardoso", "CNPJ": "42077708000190", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "55104703215", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "S C B AZEVEDO EIRELI - ME", "NOME DO USUÁRIO": "Sheila Benassuly", "CNPJ": "28702610000156", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAPREGY/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "014581449 014581448", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "NÃO", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "74349872272", "SENHA SIMPLES": "688880211246", "SENHA SEFA": "" }, { "EMPRESA": "SANTISTA COMERCIO DE COMBUSTÍVEL LTDA", "NOME DO USUÁRIO": "Jairo Tenório", "CNPJ": "42669916000189", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "SIM", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "S. D. S. BAIA LTDA", "NOME DO USUÁRIO": "Sandro Daniel", "CNPJ": "49063684000160", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ENCERRADO", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "69313342200", "CPF": "606667757310", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "SIPUADA", "NOME DO USUÁRIO": "Marley", "CNPJ": "37607102000180", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "OK", "DOM.SEFA": "SIMPLES", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "00715872257", "CPF": "668106839658", "SENHA SIMPLES": "Contec123456", "SENHA SEFA": "Contec123456" }, { "EMPRESA": "SIGATEC SOLUCOES EM TI E DESENVOLVIMENTO", "NOME DO USUÁRIO": "Jeyel", "CNPJ": "34536206000152", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "01051672236", "SENHA SIMPLES": "090040345593", "SENHA SEFA": "" }, { "EMPRESA": "SIMONE TRANSPORTES DATAPLACEHOLDER CONSTRUÇÕES LTDA", "NOME DO USUÁRIO": "Simone Alves", "CNPJ": "10.632,377/0001-17", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "LIQUIDADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "SUPERMERCADO TROPICAL LTDA", "NOME DO USUÁRIO": "Tamires Estumano", "CNPJ": "37.129.960/0001-66", "CAIXA POSTAL": "SEM EMIÇÃO", "DOCUMENTO ENVIADO": "SEM EMIÇÃO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "011681761", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "NORMAL", "CPF": "", "SENHA SIMPLES": "NORMAL", "SENHA SEFA": "" }, { "EMPRESA": "STAR FITNESS ACADEMIA LTDA", "NOME DO USUÁRIO": "Adriane Gonçalves Martins Barbosa", "CNPJ": "53435997000179", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ENCERRADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "69135487291", "SENHA SIMPLES": "301007328320", "SENHA SEFA": "" }, { "EMPRESA": "T E IGREJA", "NOME DO USUÁRIO": "THIAGO ESTUMANOIGREJA", "CNPJ": "13.556.764/0001-00", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "006744408 006744352 006744467", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "OK", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "T. M. PINTO LTDA (URBANO B. RODRIGUES LTDA,)", "NOME DO USUÁRIO": "Júnior Batista", "CNPJ": "24039988000160", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "T LOPES PEREIRA VAREJISTA", "NOME DO USUÁRIO": "LINDA", "CNPJ": "20684808000142", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "011507435 013010013CANC", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "SIM", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "TONY P DE FRIETAS LTDA", "NOME DO USUÁRIO": "TONY PACHECO DE FREITAS", "CNPJ": "27520007000190", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO/OK", "PESQUISA FISCAL ": "NÃO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "DÉBITO", "PARC.SEFA": "SIM", "DOM.SEFA": "NORMAL", "DOM.SIMPLES": "NORMAL", "REGIME 2025": "81610050282", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "V R DOS P PORTILHO - ME", "NOME DO USUÁRIO": "Valdemar Portilho (reizinho)", "CNPJ": "06205742000130", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "IMPRESSO/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "005664654", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "VAREJAO TEM PISCINA LTDA", "NOME DO USUÁRIO": "Leliane Teles", "CNPJ": "04850661000167", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "17244641249", "SENHA SIMPLES": "629938589748", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "VAREJAO TEM MAGAZINE LTDA", "NOME DO USUÁRIO": "Leliane Teles", "CNPJ": "26741566000168", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "83972471220", "SENHA SIMPLES": "460519158798", "SENHA SEFA": "Cnpj1234" }, { "EMPRESA": "WALDANI N ALMEIDA - ME", "NOME DO USUÁRIO": "Waldani Almeida", "CNPJ": "22499497000177", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "DÉBITO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "00504032224", "SENHA SIMPLES": "153169240875", "SENHA SEFA": "" }, { "EMPRESA": "W DOS S CRUZ LTDA", "NOME DO USUÁRIO": "Wagner Cruz", "CNPJ": "26.675.318/0001-66", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "CANCELADO", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "CANCELADO", "PARC.SIMPLES ": "NÃO", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "", "SENHA SIMPLES": "", "SENHA SEFA": "" }, { "EMPRESA": "W M AMARAL LTDA", "NOME DO USUÁRIO": "Welton Amaral", "CNPJ": "33995455000143", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "014097761 014987185", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "02780048301", "SENHA SIMPLES": "325083550491", "SENHA SEFA": "" }, { "EMPRESA": "WB COMERCIO DE MERCADORIAS EM GERAL LTDA", "NOME DO USUÁRIO": "Wagner Barra", "CNPJ": "05724970000153", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO", "PARC.SIMPLES ": "SIM", "PARC.SEFA": "NÃO", "DOM.SEFA": "OK", "DOM.SIMPLES": "SIMPLES", "REGIME 2025": "SIMPLES", "CPF": "92694675204", "SENHA SIMPLES": "281923651556", "SENHA SEFA": "" }, { "EMPRESA": "W V ALVES LTDA", "NOME DO USUÁRIO": "Vandson Alves", "CNPJ": "46755642000100", "CAIXA POSTAL": "OK", "DOCUMENTO ENVIADO": "ZAP/OK", "PESQUISA FISCAL ": "DÉBITO", "PARC.RECEITA": "NÃO", "PAR.PGFN": "NÃO" }];
+
+    let currentCategory = 'empresa'; // 'empresa' ou 'pessoa_fisica'
+
+    const RAW_PF = [
+      { 'EMPRESA': 'PERPETUA DO S. M. DA SILVA', 'NOME DO USUÁRIO': 'PERPETUA', 'CNPJ': '087.760.592-00', 'WHATSAPP': '', 'CAIXA POSTAL': 'OK', 'DOCUMENTO ENVIADO': 'SIM', 'PESQUISA FISCAL': 'OK', 'PARC.RECEITA': 'OK', 'PAR.PGFN': 'NÃO', 'PARC.SEFA': 'OK', 'PAR. PREFEITURA': 'OK', 'PAR. PREVIDENCIARIO': 'OK', 'PARC.SIMPLES': 'OK', 'PAR. PROCURADORIA': 'NÃO', 'EMAIL': '', 'OBS': 'IPVA_16 X R$255,04', 'CATEGORY': 'pessoa_fisica' },
+      { 'EMPRESA': 'LIDIANE DO PILAR PACHECO', 'NOME DO USUÁRIO': 'LIDIANE', 'CNPJ': '002.419.912-50', 'WHATSAPP': '', 'CAIXA POSTAL': 'OK', 'DOCUMENTO ENVIADO': 'SIM', 'PESQUISA FISCAL': 'OK', 'PARC.RECEITA': 'OK', 'PAR.PGFN': 'NÃO', 'PARC.SEFA': 'OK', 'PAR. PREFEITURA': 'OK', 'PAR. PREVIDENCIARIO': 'OK', 'PARC.SIMPLES': 'OK', 'PAR. PROCURADORIA': 'NÃO', 'EMAIL': '', 'OBS': 'IPVA 4 X 1.229,20', 'CATEGORY': 'pessoa_fisica' },
+      { 'EMPRESA': 'JOAO JOSE FAYAL SILVA', 'NOME DO USUÁRIO': 'JOAO JOSE', 'CNPJ': '279.963.952-68', 'WHATSAPP': '', 'CAIXA POSTAL': 'OK', 'DOCUMENTO ENVIADO': 'SIM', 'PESQUISA FISCAL': 'OK', 'PARC.RECEITA': 'OK', 'PAR.PGFN': 'NÃO', 'PARC.SEFA': 'OK', 'PAR. PREFEITURA': 'OK', 'PAR. PREVIDENCIARIO': 'OK', 'PARC.SIMPLES': 'OK', 'PAR. PROCURADORIA': 'NÃO', 'EMAIL': '', 'OBS': 'SENHA: Contec1234', 'CATEGORY': 'pessoa_fisica' },
+      { 'EMPRESA': 'ALCY QUARESMA CARDOSO', 'NOME DO USUÁRIO': 'ALCY', 'CNPJ': '123.690.042-15', 'WHATSAPP': '', 'CAIXA POSTAL': 'OK', 'DOCUMENTO ENVIADO': 'SIM', 'PESQUISA FISCAL': 'OK', 'PARC.RECEITA': 'OK', 'PAR.PGFN': 'NÃO', 'PARC.SEFA': 'OK', 'PAR. PREFEITURA': 'OK', 'PAR. PREVIDENCIARIO': 'OK', 'PARC.SIMPLES': 'OK', 'PAR. PROCURADORIA': 'NÃO', 'EMAIL': '', 'OBS': 'senha gov.br: Alcy123457@', 'CATEGORY': 'pessoa_fisica' },
+      { 'EMPRESA': 'NELSON PEREIRA TAVARES', 'NOME DO USUÁRIO': 'NELSON', 'CNPJ': '898.542.252-91', 'WHATSAPP': '5591991017715', 'CAIXA POSTAL': 'OK', 'DOCUMENTO ENVIADO': 'SIM', 'PESQUISA FISCAL': 'OK', 'PARC.RECEITA': 'OK', 'PAR.PGFN': 'NÃO', 'PARC.SEFA': 'OK', 'PAR. PREFEITURA': 'OK', 'PAR. PREVIDENCIARIO': 'OK', 'PARC.SIMPLES': 'OK', 'PAR. PROCURADORIA': 'NÃO', 'EMAIL': '', 'OBS': 'IPVA 10 X R$413,21', 'CATEGORY': 'pessoa_fisica' }
+    ];
+
+    function setCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.sidebar .nav-item').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(cat === 'empresa' ? 'btn-cat-empresa' : 'btn-cat-pf').classList.add('active');
+
+      const title = cat === 'empresa' ? 'Empresas' : 'Pessoa Física';
+      const topTitle = document.querySelector('.topbar-title');
+      if (topTitle) topTitle.innerText = title;
+
+      applyFilters();
+      const sub = document.getElementById('topbarSub');
+      if (sub) sub.textContent = `${filtered.length} ${cat === 'empresa' ? 'empresas' : 'pessoas'} cadastradas`;
+    }
+
+    function adjustFormLabels() {
+      const cat = document.getElementById('reg-category').value;
+      const lblEmpresa = document.getElementById('lbl-empresa');
+      const lblCnpj = document.getElementById('lbl-cnpj');
+      const inputCnpj = document.getElementById('reg-cnpj');
+      const inputEmpresa = document.getElementById('reg-empresa');
+
+      if (cat === 'pessoa_fisica') {
+        lblEmpresa.innerText = 'Nome Completo *';
+        lblCnpj.innerText = 'CPF *';
+        inputCnpj.placeholder = '000.000.000-00';
+        inputEmpresa.placeholder = 'Nome da pessoa';
+      } else {
+        lblEmpresa.innerText = 'Empresa *';
+        lblCnpj.innerText = 'CNPJ *';
+        inputCnpj.placeholder = '00.000.000/0000-00';
+        inputEmpresa.placeholder = 'Nome da empresa';
+      }
+    }
+
+    const STORAGE = 'contec_v3';
+    let data = [], notes = {}, filtered = [], sortCol = 'empresa', sortAsc = true;
+    let editingId = null, notesId = null, drawerOpen = null;
+    let currentQuickFilter = 'ALL', searchTimeout = null, lastScrollPos = 0;
+
+    // ── FIREBASE CORE ──
+    let fbApp, fbAuth, fbDb;
+    let isCloudEnabled = false;
+    let isSyncing = false;
+
+    const HARDCODED_CONFIG = {
+      apiKey: "AIzaSyC1zgXSA7b5ZUZdJrhQGmPKJ93pmeopbFg",
+      authDomain: "contec-25a58.firebaseapp.com",
+      databaseURL: "https://contec-25a58-default-rtdb.firebaseio.com",
+      projectId: "contec-25a58",
+      storageBucket: "contec-25a58.firebasestorage.app",
+      messagingSenderId: "434432307280",
+      appId: "1:434432307280:web:384dffad28e6263e1ae155",
+      measurementId: "G-0465LWG0FZ"
+    };
+
+    function initFirebase() {
+      try {
+        fbApp = firebase.initializeApp(HARDCODED_CONFIG);
+        fbAuth = firebase.auth();
+        fbDb = firebase.database();
+        isCloudEnabled = true;
+
+        fbAuth.onAuthStateChanged(user => {
+          if (user) {
+            document.getElementById('login-page').style.opacity = '0';
+            setTimeout(() => document.getElementById('login-page').style.display = 'none', 400);
+            document.getElementById('userEmail').textContent = user.email;
+            updateCloudUI('online', 'Conectado');
+            startCloudSync(user.uid);
+          } else {
+            document.getElementById('login-page').style.display = 'flex';
+            document.getElementById('login-page').style.opacity = '1';
+            document.getElementById('userEmail').textContent = 'Nenhum';
+            updateCloudUI('offline', 'Desconectado');
+          }
+        });
+      } catch (e) {
+        console.error("Erro config Firebase:", e);
+        toast("⚠️ Erro ao conectar com a nuvem!");
+      }
+    }
+
+    async function handleLogin() {
+      const btn = document.getElementById('loginBtn');
+      const email = document.getElementById('login-email').value.trim();
+      const pass = document.getElementById('login-pass').value.trim();
+      const errEl = document.getElementById('login-error');
+
+      btn.disabled = true;
+      btn.innerText = "⌛ Conectando...";
+      errEl.style.display = 'none';
+
+      try {
+        await fbAuth.signInWithEmailAndPassword(email, pass);
+      } catch (e) {
+        btn.disabled = false;
+        btn.innerText = "🚀 Entrar e Sincronizar";
+
+        if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+          errEl.innerHTML = "❌ Erro de Acesso.<br>Certifique-se que o usuário <b>jwicsg@gmail.com</b> foi criado no Firebase.";
+        } else if (e.code === 'auth/wrong-password') {
+          errEl.textContent = "❌ Senha incorreta.";
+        } else {
+          errEl.textContent = "❌ Erro: " + e.message;
+        }
+        errEl.style.display = 'block';
+      }
+    }
+
+    function logout() {
+      if (fbAuth) fbAuth.signOut();
+      location.reload();
+    }
+
+    function updateCloudUI(status, label) {
+      const dot = document.getElementById('cloudDot');
+      const lbl = document.getElementById('cloudLabel');
+      if (dot) dot.className = 'status-dot ' + status;
+      if (lbl) lbl.textContent = label;
+    }
+
+    function startCloudSync(uid) {
+      const dbRef = fbDb.ref('users/' + uid + '/appData');
+
+      dbRef.on('value', snapshot => {
+        if (isSyncing) return;
+        const cloudData = snapshot.val();
+        if (cloudData) {
+          data = cloudData.data || [];
+          notes = cloudData.notes || {};
+          applyFilters();
+          renderTable();
+          updateStats();
+        } else {
+          saveData();
+        }
+      });
+    }
+
+    function renderEmissionChecklist(id) {
+      const r = data.find(x => x.id === id);
+      const fields = [
+        { key: 'parcReceita', label: 'Receita' },
+        { key: 'parPgfn', label: 'PGFN' },
+        { key: 'parcSefa', label: 'SEFA' },
+        { key: 'parcPrefeitura', label: 'Prefeitura' },
+        { key: 'parcPrevidenciario', label: 'Previdenciário' },
+        { key: 'parcSimples', label: 'Simples' },
+        { key: 'parcProcuradoria', label: 'Procuradoria' }
+      ];
+
+      const active = fields.filter(f => (r[f.key] || '').toUpperCase() !== 'NÃO');
+      if (active.length === 0) return '';
+
+      const ems = r.emissions || {};
+
+      return `
+      <div class="drawer-section">
+        <div class="drawer-sec-title">📅 Checklist de Emissão (Mensal)</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${active.map(f => {
+        const isDone = ems[f.key];
+        const date = ems[f.key + '_date'] || '';
+        return `
+            <div onclick="toggleEmission(${id}, '${f.key}')" style="display:flex; align-items:center; gap:10px; padding:10px; background:${isDone ? 'rgba(45, 216, 122, 0.1)' : 'var(--s2)'}; border:1px solid ${isDone ? 'var(--green)' : 'var(--border)'}; border-radius:8px; cursor:pointer; transition:0.2s;">
+              <div style="width:20px; height:20px; border-radius:4px; border:2px solid ${isDone ? 'var(--green)' : 'var(--text2)'}; background:${isDone ? 'var(--green)' : 'transparent'}; display:flex; align-items:center; justify-content:center; color:var(--bg); font-size:12px;">
+                ${isDone ? '✓' : ''}
+              </div>
+              <div style="flex:1">
+                <div style="font-size:13px; font-weight:600; color:${isDone ? 'var(--green)' : 'var(--text)'}">${f.label}</div>
+                ${date ? `<div style="font-size:10px; color:var(--text2)">Emitido em: ${date}</div>` : `<div style="font-size:10px; color:var(--text3)">Aguardando emissão</div>`}
+                
+                ${renderParcInfoMini(id, f.key)}
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+                <div style="font-size:10px; color:var(--text2); font-weight:700;">${esc(r[f.key])}</div>
+                <button class="btn btn-ghost" style="padding:2px 5px; font-size:10px; border-color:var(--border2)" onclick="event.stopPropagation();openParcDetails(${id}, '${f.key}', '${f.label}')">🔢 Ajustar</button>
+              </div>
+            </div>
+            `;
+      }).join('')}
+        </div>
+        <button class="btn btn-ghost" style="width:100%; margin-top:10px; font-size:10px;" onclick="resetAllEmissions()">Resetar Checklist Geral</button>
+      </div>
+      `;
+    }
+
+    function renderParcInfoMini(id, key) {
+      const r = data.find(x => x.id === id);
+      const info = (r.parcInfo || {})[key];
+      if (!info) return '';
+
+      const total = parseInt(info.total) || 0;
+      const paid = parseInt(info.paid) || 0;
+      const overdueStr = (info.overdue || '').trim();
+      const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
+
+      return `
+      <div style="margin-top:6px; padding-top:6px; border-top:1px dashed var(--border);">
+        <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text);">
+          <span>Parcela: <b>${paid}/${total}</b></span>
+          ${overdueStr ? `<span class="parc-overdue">⚠️ Atraso: ${esc(overdueStr)}</span>` : ''}
+          <span style="color:var(--text3)">Ref: ${esc(info.date || '—')}</span>
+        </div>
+        <div class="parc-progress">
+          <div class="parc-progress-bar" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+    }
+
+    let currentParcTarget = null;
+    function openParcDetails(id, key, label) {
+      currentParcTarget = { id, key };
+      const r = data.find(x => x.id === id);
+      const info = (r.parcInfo || {})[key] || {};
+
+      document.getElementById('parcModalTitle').textContent = `Dados: ${label}`;
+      document.getElementById('pi-total').value = info.total || '';
+      document.getElementById('pi-paid').value = info.paid || '';
+      document.getElementById('pi-numOverdue').value = info.numOverdue || '0';
+      document.getElementById('pi-overdue').value = info.overdue || '';
+      document.getElementById('pi-date').value = info.date || '';
+      document.getElementById('pi-dueDate').value = info.dueDate || '';
+
+      document.getElementById('pi-overdue-row').style.display = (info.numOverdue > 0) ? 'block' : 'none';
+
+      document.getElementById('saveParcInfoBtn').onclick = saveParcInfo;
+      openModal('parcModal');
+    }
+
+    function saveParcInfo() {
+      const { id, key } = currentParcTarget;
+      const r = data.find(x => x.id === id);
+      if (!r.parcInfo) r.parcInfo = {};
+
+      r.parcInfo[key] = {
+        total: document.getElementById('pi-total').value,
+        paid: document.getElementById('pi-paid').value,
+        numOverdue: document.getElementById('pi-numOverdue').value,
+        overdue: document.getElementById('pi-overdue').value,
+        date: document.getElementById('pi-date').value,
+        dueDate: document.getElementById('pi-dueDate').value
+      };
+
+      saveData();
+      closeModal('parcModal');
+      openDrawer(id); // Refresh
+      toast('📊 Dados da parcela salvos!');
+    }
+
+    function toggleEmission(id, field) {
+      const r = data.find(x => x.id === id);
+      if (!r.emissions) r.emissions = {};
+
+      const isChecking = !r.emissions[field];
+      r.emissions[field] = isChecking;
+
+      if (isChecking) {
+        const now = new Date();
+        r.emissions[field + '_date'] = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Custom Stylish Prompt
+        setTimeout(() => {
+          showCustomConfirm(
+            'Guia Emitida!',
+            `A guia de <b>${field.replace('parc', '')}</b> foi marcada como emitida. Deseja abrir o WhatsApp para avisar o cliente agora?`,
+            () => sendWhatsApp(id, field)
+          );
+        }, 200);
+      } else {
+        delete r.emissions[field + '_date'];
+      }
+
+      saveData();
+      openDrawer(id);
+      renderTable(); // Update dots
+      toast('✅ Checklist atualizado!');
+    }
+
+    function resetAllEmissions() {
+      if (!confirm('⚠️ ATENÇÃO: Isso vai zerar o checklist de TODAS as empresas. Deseja continuar para iniciar o novo mês?')) return;
+      data.forEach(r => r.emissions = {});
+      saveData();
+      renderTable();
+      toast('🧹 Todos os checklists foram zerados!');
+    }
+
+    // ── FIELD CYCLES ──
+    const CYCLES = {
+      docEnviado: ['NÃO', 'SIM', 'ZAP', 'ZAP/OK', 'IMPRESSO', 'IMPRESSO/OK', 'AUTOMATICO', 'ZAPREGY', 'ZAPREGY/OK', 'CANCELADO', 'RESCINDIDO', 'LIQUIDADO', 'SERVIÇO SUSPENSO', 'SERVIÇOS SUSPENSO', 'ENCERRADO', 'SEM EMIÇÃO'],
+      pesqFiscal: ['NÃO', 'SIM', 'DÉBITO', 'OK'],
+      parcReceita: ['NÃO', 'SIM', 'DÉBITO', 'CANCELADO'],
+      parPgfn: ['NÃO', 'SIM', 'DÉBITO'],
+      parcSefa: ['NÃO', 'SIM', 'DÉBITO', 'OK', 'RESCINDIDO'],
+      parcPrefeitura: ['NÃO', 'SIM', 'DÉBITO', 'OK'],
+      parcPrevidenciario: ['NÃO', 'SIM', 'DÉBITO', 'OK'],
+      parcSimples: ['NÃO', 'SIM', 'DÉBITO', 'CANCELADO', 'SIM(RELP)', 'SIM-MEI'],
+      parcProcuradoria: ['NÃO', 'SIM', 'DÉBITO', 'OK'],
+      caixaPostal: ['OK', 'SEM EMIÇÃO'],
+    };
+
+    function nextVal(field, cur) {
+      const arr = CYCLES[field] || [];
+      const i = arr.findIndex(v => v.toUpperCase() === (cur || '').toUpperCase());
+      return arr[(i + 1) % arr.length] || arr[0] || cur;
+    }
+
+    // ── LOAD / SAVE ──
+    function loadData() {
+      const stored = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+      const edits = stored.edits || {};
+      const deleted = stored.deleted || [];
+      notes = stored.notes || {};
+      const extra = stored.extra || [];
+
+      // Combine RAW and RAW_PF
+      const combinedRAW = RAW.map(r => ({ ...r, CATEGORY: 'empresa' })).concat(RAW_PF);
+
+      data = combinedRAW.map((row, i) => {
+        if (deleted.includes(i)) return null;
+        const e = edits[i] || {};
+        return {
+          id: i,
+          isBase: true,
+          category: row['CATEGORY'] || 'empresa',
+          empresa: (row['EMPRESA'] || '').trim(),
+          usuario: (row['NOME DO USUÁRIO'] || '').trim(),
+          cnpj: (row['CNPJ'] || '').trim(),
+          caixaPostal: e.caixaPostal !== undefined ? e.caixaPostal : (row['CAIXA POSTAL'] || '').trim(),
+          docEnviado: e.docEnviado !== undefined ? e.docEnviado : (row['DOCUMENTO ENVIADO'] || '').trim(),
+          pesqFiscal: e.pesqFiscal !== undefined ? e.pesqFiscal : (row['PESQUISA FISCAL '] || row['PESQUISA FISCAL'] || '').trim(),
+          parcReceita: e.parcReceita !== undefined ? e.parcReceita : (row['PARC.RECEITA'] || '').trim(),
+          parPgfn: e.parPgfn !== undefined ? e.parPgfn : (row['PAR.PGFN'] || '').trim(),
+          parcSefa: e.parcSefa !== undefined ? e.parcSefa : (row['PARC.SEFA'] || '').trim(),
+          parcPrefeitura: e.parcPrefeitura !== undefined ? e.parcPrefeitura : (row['PAR. PREFEITURA'] || '').trim(),
+          parcPrevidenciario: e.parcPrevidenciario !== undefined ? e.parcPrevidenciario : (row['PAR. PREVIDENCIARIO'] || '').trim(),
+          parcSimples: e.parcSimples !== undefined ? e.parcSimples : (row['PARC.SIMPLES '] || row['PARC.SIMPLES'] || row['Par. SIMPLES NACIONAL'] || '').trim(),
+          parcProcuradoria: e.parcProcuradoria !== undefined ? e.parcProcuradoria : (row['PAR. PROCURADORIA'] || '').trim(),
+          email: e.email !== undefined ? e.email : (row['EMAIL'] || '').trim(),
+          obs: e.obs !== undefined ? e.obs : (row['OBS'] || row['Observação'] || '').trim(),
+          cpf: e.cpf !== undefined ? e.cpf : (row['CPF'] || '').trim(),
+          senhaSim: e.senhaSim !== undefined ? e.senhaSim : (row['SENHA SIMPLES'] || '').trim(),
+          senhaSefa: e.senhaSefa !== undefined ? e.senhaSefa : (row['SENHA SEFA'] || '').trim(),
+          whatsapp: e.whatsapp !== undefined ? e.whatsapp : (row['WHATSAPP'] || '').trim(),
+          dueDate: e.dueDate || '',
+          sentDate: e.sentDate || '',
+          customMsg: e.customMsg || '',
+          emissions: e.emissions || {},
+          parcInfo: e.parcInfo || {},
+        };
+      }).filter(x => x !== null);
+
+      data = data.concat(extra.map(x => ({ ...x, isBase: false })));
+      const tIn = document.getElementById('tgToken');
+      const cIn = document.getElementById('tgChatId');
+      if (tIn) tIn.value = localStorage.getItem('contec_tg_token') || '';
+      if (cIn) cIn.value = localStorage.getItem('contec_tg_chatid') || '';
+    }
+
+    function saveData() {
+      const edits = {};
+      const extra = [];
+      const combinedRAW = RAW.map(r => ({ ...r, CATEGORY: 'empresa' })).concat(RAW_PF);
+      const currentBaseIds = data.filter(r => r.isBase).map(r => r.id);
+      const deleted = [];
+      combinedRAW.forEach((_, i) => { if (!currentBaseIds.includes(i)) deleted.push(i); });
+      data.forEach(r => {
+        if (r.isBase) {
+          const orig = combinedRAW[r.id];
+          if (!orig) return;
+          const oe = {};
+          const m = {
+            caixaPostal: (orig['CAIXA POSTAL'] || '').trim(),
+            docEnviado: (orig['DOCUMENTO ENVIADO'] || '').trim(),
+            pesqFiscal: (orig['PESQUISA FISCAL '] || orig['PESQUISA FISCAL'] || '').trim(),
+            parcReceita: (orig['PARC.RECEITA'] || '').trim(),
+            parPgfn: (orig['PAR.PGFN'] || '').trim(),
+            parcSefa: (orig['PARC.SEFA'] || '').trim(),
+            parcPrefeitura: (orig['PAR. PREFEITURA'] || '').trim(),
+            parcPrevidenciario: (orig['PAR. PREVIDENCIARIO'] || '').trim(),
+            parcSimples: (orig['PARC.SIMPLES '] || orig['PARC.SIMPLES'] || '').trim(),
+            parcProcuradoria: (orig['PAR. PROCURADORIA'] || '').trim(),
+            email: (orig['EMAIL'] || '').trim(),
+            obs: (orig['OBS'] || '').trim(),
+            whatsapp: (orig['WHATSAPP'] || '').trim(),
+            funcionarios: (orig['FUNCIONARIOS'] || '').trim(),
+          };
+          for (const k of Object.keys(m)) { if (r[k] !== m[k]) oe[k] = r[k]; }
+          if (Object.keys(oe).length) edits[r.id] = oe;
+        } else {
+          extra.push(r);
+        }
+      });
+      localStorage.setItem(STORAGE, JSON.stringify({ edits, notes, extra, deleted }));
+      const tIn = document.getElementById('tgToken');
+      const cIn = document.getElementById('tgChatId');
+      if (tIn) localStorage.setItem('contec_tg_token', tIn.value);
+      if (cIn) localStorage.setItem('contec_tg_chatid', cIn.value);
+    }
+
+    // ── STATUS HELPERS ──
+    function badgeClass(val) {
+      const v = (val || '').toUpperCase().trim();
+      if (v === 'ZAP/OK' || v === 'IMPRESSO/OK' || v === 'ZAPREGY/OK') return 'b-zapok';
+      if (v === 'ZAP' || v === 'ZAPREGY') return 'b-zap';
+      if (v === 'IMPRESSO') return 'b-imp';
+      if (v === 'AUTOMATICO') return 'b-auto';
+      if (v.includes('SUSPENSO')) return 'b-susp';
+      if (v === 'CANCELADO') return 'b-canc';
+      if (v === 'LIQUIDADO') return 'b-liq';
+      if (v === 'RESCINDIDO') return 'b-resc';
+      if (v === 'ENCERRADO') return 'b-enc';
+      if (v === 'SEM EMIÇÃO') return 'b-sem';
+      if (v === 'SIM' || v.startsWith('SIM(')) return 'b-sim';
+      if (v === 'NÃO' || v === 'NAO') return 'b-nao';
+      if (v === 'DÉBITO' || v === 'DEBITO') return 'b-deb';
+      if (v === 'OK') return 'b-ok';
+      return 'b-def';
+    }
+    function badgeIcon(val) {
+      const v = (val || '').toUpperCase().trim();
+      if (v.includes('ZAP')) return '📱';
+      if (v.includes('IMPRESSO')) return '🖨';
+      if (v === 'AUTOMATICO') return '⚙️';
+      if (v.includes('SUSPENSO')) return '⛔';
+      if (v === 'CANCELADO') return '❌';
+      if (v === 'LIQUIDADO') return '💰';
+      if (v === 'RESCINDIDO') return '🚫';
+      if (v === 'ENCERRADO') return '🔒';
+      if (v === 'SEM EMIÇÃO') return '⚠️';
+      if (v === 'SIM' || v.startsWith('SIM(')) return '✅';
+      if (v === 'NÃO') return '—';
+      if (v === 'DÉBITO' || v === 'DEBITO') return '💳';
+      if (v === 'OK') return '✓';
+      return '';
+    }
+    function pillClass(val) {
+      const v = (val || '').toUpperCase().trim();
+      if (v === 'SIM' || v.startsWith('SIM(')) return 'pill-sim';
+      if (v === 'NÃO' || v === 'NAO') return 'pill-nao';
+      if (v === 'DÉBITO' || v === 'DEBITO') return 'pill-deb';
+      if (v === 'OK') return 'pill-ok';
+      if (!v) return 'pill-empty';
+      return 'pill-sim';
+    }
+
+    // ── NAVIGATION ──
+    function showPage(id) {
+      const regModal = document.getElementById('page-register');
+      if (id === 'register') {
+        regModal.classList.add('active');
+        adjustFormLabels(); // Ensure labels are correct for current category
+        return;
+      }
+
+      // Always hide registration modal when switching to any other page
+      regModal.classList.remove('active');
+
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+      const targetPage = document.getElementById('page-' + id);
+      if (targetPage) targetPage.classList.add('active');
+
+      const navItem = document.querySelector(`[data-page="${id}"]`);
+      if (navItem) navItem.classList.add('active');
+
+      if (id === 'list') renderTable();
+      if (id === 'stats') renderStats();
+      closeMobileSidebar();
+    }
+    function closeMobileSidebar() {
+      document.querySelector('.sidebar').classList.remove('mob-open');
+      document.querySelector('.overlay-mob').classList.remove('show');
+    }
+
+    // ── RENDER TABLE ──
+    function setQuickFilter(f, btn) {
+      currentQuickFilter = f;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      applyFilters();
+    }
+
+    function renderTable() {
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+      const dF = document.getElementById('filterDoc')?.value || '';
+      const rF = document.getElementById('filterRegime')?.value || '';
+
+      filtered = data.filter(r => {
+        if (r.category !== currentCategory) return false;
+
+        const eN = (r.empresa || '').toLowerCase();
+        const uN = (r.usuario || '').toLowerCase();
+        const cN = (r.cnpj || '').toLowerCase();
+        const cpN = (r.cpf || '').toLowerCase();
+
+        const mQ = !q || eN.includes(q) || uN.includes(q) || cN.includes(q) || cpN.includes(q);
+        const mD = !dF || (r.docEnviado || '').toUpperCase() === dF.toUpperCase();
+        const mR = !rF || (r.regime || '').toUpperCase().includes(rF.toUpperCase());
+
+        let mQuick = true;
+        const dStat = (r.docEnviado || '').toUpperCase();
+        if (currentQuickFilter === 'PENDING') {
+          mQuick = ['ZAP', 'IMPRESSO', 'AUTOMATICO', 'ZAPREGY'].includes(dStat);
+        } else if (currentQuickFilter === 'DONE') {
+          mQuick = ['ZAP/OK', 'IMPRESSO/OK', 'ZAPREGY/OK', 'OK'].includes(dStat);
+        } else if (currentQuickFilter === 'PENDING_EMISSION') {
+          const fields = ['parcReceita', 'parPgfn', 'parcSefa', 'parcPrefeitura', 'parcPrevidenciario', 'parcSimples', 'parcProcuradoria'];
+          const activeFields = fields.filter(f => (r[f] || '').toUpperCase() !== 'NÃO');
+          const ems = r.emissions || {};
+          mQuick = activeFields.some(f => !ems[f]);
+        }
+
+        return mQ && mD && mR && mQuick;
+      });
+
+      sortFiltered();
+      const tbody = document.getElementById('tableBody');
+      if (!tbody) return;
+      document.getElementById('resultCount').textContent = filtered.length + ' resultado' + (filtered.length !== 1 ? 's' : '');
+      document.getElementById('footerCount').textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+      document.getElementById('emptyState').style.display = 'none';
+
+      tbody.innerHTML = filtered.map(r => {
+        const nc = (notes[r.id] || []).length;
+        const isDone = (r.docEnviado || '').toUpperCase().endsWith('/OK') || (r.docEnviado || '').toUpperCase() === 'OK' || (r.docEnviado || '').toUpperCase() === 'SIM';
+        return `<tr onclick="openDrawer(${r.id})">
+      <td onclick="event.stopPropagation()">
+        <input type="checkbox" ${isDone ? 'checked' : ''} onclick="toggleDone(${r.id})" style="cursor:pointer; width:16px; height:16px;">
+      </td>
+      <td>
+        <div class="e-name">
+          ${renderEmissionDot(r)}
+          ${esc(r.empresa)}
+        </div>
+        <div class="e-user">👤 ${esc(r.usuario)}</div>
+      </td>
+      <td><span class="cnpj-val">${esc(r.cnpj)}</span></td>
+      <td><span class="cnpj-val">${esc(r.whatsapp || '—')}</span></td>
+      <td><span class="badge ${badgeClass(r.caixaPostal)}">${esc(r.caixaPostal || '—')}</span></td>
+      <td><span class="e-user">${esc(r.email || '—')}</span></td>
+      <td onclick="event.stopPropagation()">
+        <span class="badge ${badgeClass(r.docEnviado)}" style="cursor:pointer"
+          onclick="event.stopPropagation();cycleField(${r.id},'docEnviado')"
+          title="Clique para ciclar">
+          ${badgeIcon(r.docEnviado)} ${esc(r.docEnviado)}
+        </span>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <span class="pill ${pillClass(r.pesqFiscal)}" onclick="event.stopPropagation();cycleField(${r.id},'pesqFiscal')">${esc(r.pesqFiscal || '—')}</span>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <span class="pill ${pillClass(r.parcReceita)}" onclick="event.stopPropagation();cycleField(${r.id},'parcReceita')">${esc(r.parcReceita || '—')}</span>
+      </td>
+      <td><span class="mono">${esc(r.parPgfn || '—')}</span></td>
+      <td onclick="event.stopPropagation()">
+        <span class="pill ${pillClass(r.parcSefa)}" onclick="event.stopPropagation();cycleField(${r.id},'parcSefa')">${esc(r.parcSefa || '—')}</span>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <span class="pill ${pillClass(r.parcPrefeitura)}" onclick="event.stopPropagation();cycleField(${r.id},'parcPrefeitura')">${esc(r.parcPrefeitura || '—')}</span>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <span class="pill ${pillClass(r.parcPrevidenciario)}" onclick="event.stopPropagation();cycleField(${r.id},'parcPrevidenciario')">${esc(r.parcPrevidenciario || '—')}</span>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <span class="pill ${pillClass(r.parcSimples)}" onclick="event.stopPropagation();cycleField(${r.id},'parcSimples')">${esc(r.parcSimples || '—')}</span>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <span class="pill ${pillClass(r.parcProcuradoria)}" onclick="event.stopPropagation();cycleField(${r.id},'parcProcuradoria')">${esc(r.parcProcuradoria || '—')}</span>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <button class="comment-btn ${nc ? 'has-note' : ''}" onclick="event.stopPropagation();openNotes(${r.id})" title="${nc ? nc + ' nota(s)' : 'Adicionar nota'}">
+          ${nc ? '💬' : '🗒'} ${nc ? `<sup style="font-size:9px">${nc}</sup>` : ''}
+        </button>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex; gap:6px; justify-content:center;">
+          <button class="btn btn-ghost" style="padding:5px;font-size:14px;color:var(--green);border-color:rgba(45,216,122,0.3)" onclick="event.stopPropagation();sendWhatsApp(${r.id})" title="Enviar WhatsApp">💬</button>
+          <button class="btn btn-ghost" style="padding:6px;font-size:12px" onclick="event.stopPropagation();openEdit(${r.id})" title="Editar Registro">✏️</button>
+          <button class="btn btn-ghost" style="padding:6px;font-size:12px;color:var(--red);border-color:rgba(245, 86, 86, 0.2)" onclick="event.stopPropagation();deleteRecord(${r.id})" title="Excluir Registro">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+      }).join('');
+    }
+
+    function sortFiltered() {
+      filtered.sort((a, b) => {
+        const va = (a[sortCol] || '').toLowerCase();
+        const vb = (b[sortCol] || '').toLowerCase();
+        return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+    }
+    function sortBy(col) {
+      sortCol === col ? sortAsc = !sortAsc : (sortCol = col, sortAsc = true);
+      sortFiltered();
+      renderTable();
+    }
+    function renderEmissionDot(r) {
+      const fields = ['parcReceita', 'parPgfn', 'parcSefa', 'parcPrefeitura', 'parcPrevidenciario', 'parcSimples', 'parcProcuradoria'];
+      const active = fields.filter(f => (r[f] || '').toUpperCase() !== 'NÃO');
+      if (active.length === 0) return '';
+
+      const ems = r.emissions || {};
+      const allDone = active.every(f => ems[f]);
+
+      return `<span style="color:${allDone ? 'var(--green)' : 'var(--yellow)'}; margin-right:5px; font-size:14px;" title="${allDone ? 'Todas as guias emitidas' : 'Possui guias pendentes'}">${allDone ? '●' : '●'}</span>`;
+    }
+
+    function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    function saveFirebaseConfig() {
+      const val = document.getElementById('fb-config-input').value.trim();
+      if (!val) return toast('Cole a configuração do Firebase.');
+      try {
+        const config = JSON.parse(val);
+        localStorage.setItem('contec_fb_config', JSON.stringify(config));
+        toast('✅ Configuração salva! Recarregando...');
+        setTimeout(() => location.reload(), 1000);
+      } catch (e) {
+        toast('❌ Configuração inválida (JSON incorreto).');
+      }
+    }
+
+    // ── ZAP MODAL LOGIC ──
+    let zapPendingId = null;
+    function sendWhatsApp(id, targetField = null) {
+      const r = data.find(x => x.id === id);
+      zapPendingId = id;
+      document.getElementById('zapTargetName').textContent = r.empresa;
+      document.getElementById('zapTargetPhone').value = r.whatsapp || '';
+
+      const hour = new Date().getHours();
+      const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+      const labelMap = {
+        parcReceita: 'RECEITA',
+        parPgfn: 'PGFN',
+        parcSefa: 'SEFA',
+        parcPrefeitura: 'PREFEITURA',
+        parcPrevidenciario: 'PREVIDENCIÁRIO',
+        parcSimples: 'SIMPLES NACIONAL',
+        parcProcuradoria: 'PROCURADORIA'
+      };
+
+      let msgHeader = `CONTEC :  ${greeting}!\n\n`;
+
+      if (targetField && r.parcInfo && r.parcInfo[targetField]) {
+        const info = r.parcInfo[targetField];
+        const typeLabel = labelMap[targetField] || targetField.replace('parc', '').toUpperCase();
+
+        let msg = msgHeader;
+        msg += `Segue o parcelamento da empresa *${r.empresa}*:\n\n`;
+        msg += `📌 *${typeLabel}*: Parcela *${info.paid || '?'}/${info.total || '?'}* (Referente ao mês : *${info.date}*)\n\n`;
+
+        if (info.numOverdue > 0) {
+          msg += `⚠️ *Parcelas em atraso:*\n- *${typeLabel}*: Constam *${info.numOverdue} parcelas* em atraso (*${info.overdue}*)\n\n`;
+        }
+
+        msg += `Solicitamos, por gentileza, o pagamento dos valores em aberto, com o vencimento no dia  *${info.dueDate || '___'}*, caso tenha alguma duviada entre em contato\n`;
+        msg += `Permanecemos à disposição para quaisquer esclarecimentos.`;
+        document.getElementById('zapCustomMsg').value = msg;
+      } else {
+        if (r.parcInfo) {
+          const activeKeys = Object.keys(r.parcInfo).filter(k => r.parcInfo[k].total);
+
+          if (activeKeys.length === 1) {
+            sendWhatsApp(id, activeKeys[0]);
+            return;
+          }
+
+          let items = [];
+          let overdues = [];
+          let maxDueDate = '___';
+
+          activeKeys.forEach(k => {
+            const info = r.parcInfo[k];
+            const lbl = labelMap[k] || k.replace('parc', '').toUpperCase();
+            items.push(`📌 *${lbl}*: Parcela *${info.paid}/${info.total}* (Referente ao mês : *${info.date}*)`);
+            if (info.numOverdue > 0) {
+              overdues.push(`- *${lbl}*: Constam *${info.numOverdue} parcelas* em atraso (*${info.overdue}*)`);
+            }
+            if (info.dueDate) maxDueDate = info.dueDate;
+          });
+
+          let msg = msgHeader;
+          msg += `Seguem os parcelamentos da empresa *${r.empresa}*:\n\n${items.join('\n')}\n\n`;
+          if (overdues.length > 0) {
+            msg += `⚠️ *Parcelas em atraso:*\n${overdues.join('\n')}\n\n`;
+          }
+          msg += `Solicitamos, por gentileza, o pagamento dos valores em aberto, com o vencimento no dia  *${maxDueDate}*, caso tenha alguma duviada entre em contato\n`;
+          msg += `Permanecemos à disposição para quaisquer esclarecimentos.`;
+          document.getElementById('zapCustomMsg').value = msg;
+        } else {
+          document.getElementById('zapCustomMsg').value = `CONTEC :  ${greeting}!\n\nReferente à empresa *${r.empresa}* (CNPJ: ${r.cnpj}), gostaríamos de informar sobre seus documentos/parcelamentos.\n\nAtenciosamente,\nContecControl`;
+        }
+      }
+      openModal('zapModal');
+    }
+
+    function copyZapMsg() {
+      const msg = document.getElementById('zapCustomMsg').value;
+      navigator.clipboard.writeText(msg).then(() => toast('📋 Mensagem copiada!'));
+    }
+
+    function confirmAndSendZap() {
+      const r = data.find(x => x.id === zapPendingId);
+      const phoneInput = document.getElementById('zapTargetPhone').value;
+      const msgInput = document.getElementById('zapCustomMsg').value;
+      const phone = phoneInput.replace(/\D/g, '');
+
+      // Salva permanentemente no registro
+      r.whatsapp = phoneInput;
+      r.customMsg = msgInput;
+
+      const url = phone
+        ? `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msgInput)}`
+        : `https://web.whatsapp.com/send?text=${encodeURIComponent(msgInput)}`;
+
+      window.open(url, '_blank');
+
+      if (document.getElementById('zapAutoDone').checked) {
+        if (!r.docEnviado.toUpperCase().endsWith('/OK')) {
+          const base = r.docEnviado.split('/')[0];
+          r.docEnviado = base + '/OK';
+          sendNotification(r);
+        }
+      }
+
+      saveData();
+      renderTable();
+      closeModal('zapModal');
+      toast('🚀 Sincronizado e Enviado!');
+    }
+
+    function sendNotification(r) {
+      const token = localStorage.getItem('contec_tg_token');
+      const chatId = localStorage.getItem('contec_tg_chatid');
+
+      if (!token || !chatId) return;
+
+      const isPrint = (r.docEnviado || '').toUpperCase().includes('IMPRESSO');
+      const type = isPrint ? '🖨 IMPRESSÃO' : '📱 WHATSAPP';
+
+      const text = `🚀 *ContecControl - Notificação*\n\nEmpresa: *${r.empresa}*\nStatus: ${type}\nUsuário: ${r.usuario}\nCNPJ: ${r.cnpj}\n\nConcluído em: ${new Date().toLocaleString()}`;
+
+      // Using GET to bypass CORS preflight issues on file:// protocol
+      const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
+
+      fetch(url).then(() => {
+        const sepUrl = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent('------------------------------------------------')}`;
+        fetch(sepUrl);
+      }).catch(() => { });
+    }
+
+    function testTelegram() {
+      const token = document.getElementById('tgToken').value.trim();
+      const chatId = document.getElementById('tgChatId').value.trim();
+      if (!token || !chatId) return toast('Preencha Token e Chat ID para testar.');
+
+      if (!token.includes(':')) {
+        return toast('⚠️ O Token deve incluir os números iniciais (Ex: 12345:ABC...)');
+      }
+
+      const text = '✅ Teste de conexão ContecControl bem-sucedido!';
+      const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
+
+      fetch(url)
+        .then(r => r.json())
+        .then(res => {
+          if (res.ok) {
+            toast('✅ Teste enviado com sucesso!');
+            const sepUrl = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent('------------------------------------------------')}`;
+            fetch(sepUrl);
+          }
+          else toast('❌ Erro: ' + res.description);
+        })
+        .catch(e => toast('❌ Erro de conexão (CORS ou Internet).'));
+    }
+
+    function toggleDone(id) {
+      const r = data.find(x => x.id === id);
+      const wasDone = r.docEnviado.toUpperCase().endsWith('/OK');
+
+      if (wasDone) {
+        r.docEnviado = r.docEnviado.replace(/\/OK/gi, '');
+      } else {
+        r.docEnviado = r.docEnviado + '/OK';
+        sendNotification(r);
+      }
+      saveData();
+      updateStats();
+      renderTable();
+      toast(r.docEnviado.toUpperCase().endsWith('/OK') ? '✅ Marcado como Concluído' : '⏳ Marcado como Pendente');
+    }
+
+    // ── CYCLE FIELD ──
+    function cycleField(id, field) {
+      const r = data.find(x => x.id === id);
+      if (!r) return;
+      const next = nextVal(field, r[field]);
+      const dangerous = ['CANCELADO', 'RESCINDIDO', 'LIQUIDADO', 'ENCERRADO', 'SERVIÇO SUSPENSO', 'SERVIÇOS SUSPENSO'];
+      if (field === 'docEnviado' && dangerous.includes(next.toUpperCase())) {
+        if (!confirm(`⚠️ Atenção!\n\nDeseja realmente mudar o status para "${next}"?\nIsso pode afetar o controle de parcelamentos.`)) return;
+      }
+      r[field] = next;
+      saveData();
+      updateStats();
+      renderTable();
+      toast('✏️ ' + field + ' → ' + r[field]);
+    }
+    function cycleRegField(elId) {
+      const el = document.getElementById(elId);
+      const fieldMap = {
+        'reg-doc': 'docEnviado',
+        'reg-fiscal': 'pesqFiscal',
+        'reg-receita': 'parcReceita',
+        'reg-pgfn': 'parPgfn',
+        'reg-sefa': 'parcSefa',
+        'reg-prefeitura': 'parcPrefeitura',
+        'reg-previdenciario': 'parcPrevidenciario',
+        'reg-simples': 'parcSimples',
+        'reg-procuradoria': 'parcProcuradoria'
+      };
+      const field = fieldMap[elId];
+      el.innerText = nextVal(field, el.innerText);
+    }
+
+    // ── STATS ──
+    function updateStats() {
+      const catData = data.filter(r => r.category === currentCategory);
+      const t = catData.length;
+      document.getElementById('sv-total').textContent = t;
+      document.getElementById('sv-zap').textContent = catData.filter(r => r.docEnviado.toUpperCase().startsWith('ZAP')).length;
+      document.getElementById('sv-imp').textContent = catData.filter(r => r.docEnviado.toUpperCase().startsWith('IMPRESSO')).length;
+      document.getElementById('sv-canc').textContent = catData.filter(r => ['CANCELADO', 'RESCINDIDO', 'ENCERRADO', 'LIQUIDADO'].includes(r.docEnviado.toUpperCase())).length;
+      document.getElementById('sv-sim').textContent = catData.filter(r => ['SIM', 'SIMPLES'].includes((r.regime || '').toUpperCase().trim())).length;
+      document.getElementById('sv-notas').textContent = Object.values(notes).reduce((s, a) => s + a.length, 0);
+    }
+
+    function renderStats() {
+      const catData = data.filter(r => r.category === currentCategory);
+      const docCounts = {};
+      catData.forEach(r => { const k = r.docEnviado || '—'; docCounts[k] = (docCounts[k] || 0) + 1; });
+      const sorted = Object.entries(docCounts).sort((a, b) => b[1] - a[1]);
+      const total = catData.length || 1;
+      document.getElementById('statsDocList').innerHTML = sorted.map(([k, v]) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span class="badge ${badgeClass(k)}" style="min-width:130px;justify-content:center">${badgeIcon(k)} ${esc(k)}</span>
+      <div style="flex:1;background:var(--s3);border-radius:4px;height:6px;overflow:hidden">
+        <div style="width:${Math.round(v / total * 100)}%;height:100%;background:var(--accent);border-radius:4px;"></div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:13px;min-width:30px;text-align:right">${v}</span>
+    </div>`).join('');
+    }
+
+    // ── DRAWER ──
+    function openDrawer(id) {
+      const r = data.find(x => x.id === id);
+      if (!r) return;
+      drawerOpen = id;
+      const d = document.getElementById('drawer');
+      document.getElementById('drawerTitle').textContent = r.empresa;
+      document.getElementById('drawerSub').textContent = (r.category === 'pessoa_fisica' ? 'CPF: ' : 'CNPJ: ') + r.cnpj + ' • ' + r.usuario;
+      const nc = (notes[id] || []).length;
+      document.getElementById('drawerContent').innerHTML = `
+    <div class="drawer-section">
+      <div class="drawer-sec-title">📋 Informações Gerais</div>
+      <div class="drawer-grid">
+        ${dField('WhatsApp', r.whatsapp || '—')}
+        ${dField('Caixa Postal', r.caixaPostal || '—')}
+        ${dField('Email', r.email || '—')}
+        ${dField('Doc. Enviado', r.docEnviado)}
+        ${dField('Pesquisa Fiscal', r.pesqFiscal)}
+      </div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-sec-title">💳 Parcelamentos</div>
+      <div class="drawer-grid">
+        ${dField('Parc. Receita', r.parcReceita)}
+        ${dField('Par. PGFN', r.parPgfn)}
+        ${dField('Par. SEFA', r.parcSefa)}
+        ${dField('Par. PREF', r.parcPrefeitura)}
+        ${dField('Par. PREV', r.parcPrevidenciario)}
+        ${dField('Par. SIMP', r.parcSimples)}
+        ${dField('Par. PROC', r.parcProcuradoria)}
+      </div>
+    </div>
+    ${renderEmissionChecklist(id)}
+    
+    ${r.obs ? `
+    <div class="drawer-section">
+      <div class="drawer-sec-title">📝 Observação do Registro</div>
+      <div style="font-size:12px; color:var(--text2); background:var(--s2); padding:10px; border-radius:8px; border:1px solid var(--border); white-space:pre-wrap;">${esc(r.obs)}</div>
+    </div>` : ''}
+    <div class="drawer-section">
+      <div class="drawer-sec-title">💬 Notas do Sistema ${nc ? `<span style="color:var(--yellow)">(${nc})</span>` : ''}</div>
+      ${renderNotesList(id)}
+      <div class="note-input-row" style="margin-top:8px">
+        <textarea id="quickNoteInput" placeholder="Escrever nova nota..." rows="2"></textarea>
+        <button class="btn btn-primary" style="align-self:flex-end" onclick="addNoteQuick(${id})">＋</button>
+      </div>
+    </div>`;
+      d.classList.add('open');
+      document.getElementById('drawerOverlay').classList.add('show');
+    }
+    function dField(label, val) {
+      return `<div class="drawer-field"><div class="drawer-field-label">${label}</div><div class="drawer-field-val"><span class="badge ${badgeClass(val)}">${badgeIcon(val)} ${esc(val)}</span></div></div>`;
+    }
+    function closeDrawer() {
+      document.getElementById('drawer').classList.remove('open');
+      document.getElementById('drawerOverlay').classList.remove('show');
+      drawerOpen = null;
+    }
+
+    // ── NOTES ──
+    function renderNotesList(id) {
+      const ns = notes[id] || [];
+      if (!ns.length) return '<p style="font-size:12px;color:var(--text2);margin-bottom:8px">Nenhuma nota ainda.</p>';
+      return '<div class="notes-list">' + ns.map((n, i) => `
+    <div class="note-item">
+      <div class="note-meta">
+        <span class="note-date">🕐 ${n.date}</span>
+        <button class="note-del" onclick="deleteNote(${id},${i})">🗑</button>
+      </div>
+      <div class="note-text">${esc(n.text)}</div>
+    </div>`).join('') + '</div>';
+    }
+
+    function openNotes(id) {
+      notesId = id;
+      const r = data.find(x => x.id === id);
+      document.getElementById('notesTitle').textContent = '💬 Notas — ' + r.empresa;
+      refreshNoteModal(id);
+      openModal('notesModal');
+    }
+    function refreshNoteModal(id) {
+      document.getElementById('notesList').innerHTML = renderNotesList(id);
+    }
+    function addNote() {
+      const ta = document.getElementById('noteText');
+      const text = (ta.value || '').trim();
+      if (!text) return;
+      if (!notes[notesId]) notes[notesId] = [];
+      notes[notesId].unshift({ text, date: new Date().toLocaleString('pt-BR') });
+      saveData();
+      ta.value = '';
+      refreshNoteModal(notesId);
+      updateStats();
+      toast('📝 Nota adicionada!');
+      if (drawerOpen === notesId) openDrawer(notesId);
+    }
+    function addNoteQuick(id) {
+      const ta = document.getElementById('quickNoteInput');
+      const text = (ta.value || '').trim();
+      if (!text) return;
+      if (!notes[id]) notes[id] = [];
+      notes[id].unshift({ text, date: new Date().toLocaleString('pt-BR') });
+      saveData();
+      ta.value = '';
+      openDrawer(id);
+      updateStats();
+      toast('📝 Nota salva!');
+    }
+    function deleteNote(id, idx) {
+      if (!confirm('Remover esta nota?')) return;
+      notes[id].splice(idx, 1);
+      saveData();
+      refreshNoteModal(id);
+      updateStats();
+      if (drawerOpen === id) openDrawer(id);
+      toast('🗑 Nota removida.');
+    }
+
+    // ── EDIT MODAL ──
+    function openEdit(id) {
+      lastScrollPos = window.scrollY;
+      editingId = id;
+      const r = data.find(x => x.id === id);
+      document.getElementById('editTitle').textContent = 'Editar: ' + r.empresa;
+
+      document.getElementById('ef-empresa').value = r.empresa;
+      document.getElementById('ef-usuario').value = r.usuario;
+      document.getElementById('ef-cnpj').value = r.cnpj;
+      document.getElementById('ef-whatsapp').value = r.whatsapp || '';
+      document.getElementById('ef-caixa').value = r.caixaPostal || '';
+      document.getElementById('ef-email').value = r.email || '';
+      document.getElementById('ef-pgfn').value = r.parPgfn || '';
+      document.getElementById('ef-obs').value = r.obs || '';
+
+      const selects = {
+        'ef-doc': 'docEnviado',
+        'ef-pesq': 'pesqFiscal',
+        'ef-rec': 'parcReceita',
+        'ef-sefa': 'parcSefa',
+        'ef-pref': 'parcPrefeitura',
+        'ef-prev': 'parcPrevidenciario',
+        'ef-sim': 'parcSimples',
+        'ef-proc': 'parcProcuradoria'
+      };
+
+      for (const [sid, field] of Object.entries(selects)) {
+        const sel = document.getElementById(sid);
+        if (!sel) continue;
+        const options = CYCLES[field] || ['NÃO', 'SIM', 'DÉBITO', 'OK'];
+        sel.innerHTML = options.map(o => `<option value="${o}" ${o === r[field] ? 'selected' : ''}>${o}</option>`).join('');
+      }
+
+      openModal('editModal');
+    }
+    function saveEdit() {
+      const r = data.find(x => x.id === editingId);
+      if (!r) return;
+      r.empresa = document.getElementById('ef-empresa').value.trim();
+      r.usuario = document.getElementById('ef-usuario').value.trim();
+      r.cnpj = document.getElementById('ef-cnpj').value.trim();
+      r.whatsapp = document.getElementById('ef-whatsapp').value.trim();
+      r.caixaPostal = document.getElementById('ef-caixa').value.trim();
+      r.email = document.getElementById('ef-email').value.trim();
+      r.parPgfn = document.getElementById('ef-pgfn').value.trim();
+      r.obs = document.getElementById('ef-obs').value.trim();
+
+      r.docEnviado = document.getElementById('ef-doc').value;
+      r.pesqFiscal = document.getElementById('ef-pesq').value;
+      r.parcReceita = document.getElementById('ef-rec').value;
+      r.parcSefa = document.getElementById('ef-sefa').value;
+      r.parcPrefeitura = document.getElementById('ef-pref').value;
+      r.parcPrevidenciario = document.getElementById('ef-prev').value;
+      r.parcSimples = document.getElementById('ef-sim').value;
+      r.parcProcuradoria = document.getElementById('ef-proc').value;
+
+      saveData();
+      closeModal('editModal');
+      renderTable();
+      updateStats();
+      if (drawerOpen === editingId) openDrawer(editingId);
+      window.scrollTo(0, lastScrollPos);
+      toast('✅ Dados salvos!');
+    }
+
+    function deleteRecord(id) {
+      const r = data.find(x => x.id === id);
+      if (!r) return;
+      if (!confirm(`⚠️ TEM CERTEZA?\n\nIsso removerá permanentemente o cadastro de:\n"${r.empresa}"\n\nEsta ação não pode ser desfeita.`)) return;
+
+      const idx = data.findIndex(x => x.id === id);
+      if (idx !== -1) {
+        data.splice(idx, 1);
+        saveData();
+        closeModal('editModal');
+        closeDrawer();
+        renderTable();
+        updateStats();
+        toast('🗑 Registro excluído permanentemente.');
+      }
+    }
+
+
+
+    // ── REPORT GENERATION ──
+    function generateReport() {
+      const area = document.getElementById('printArea');
+      const now = new Date().toLocaleString();
+      const fields = ['parcReceita', 'parPgfn', 'parcSefa', 'parcPrefeitura', 'parcPrevidenciario', 'parcSimples', 'parcProcuradoria'];
+
+      const stats = { total: filtered.length, done: 0, pending: 0 };
+
+      let html = `
+      <div class="print-header">
+        <div>
+          <h1 style="margin:0; font-size:22px;">ContecControl</h1>
+          <p style="margin:2px 0; font-size:12px;">Relatório de Fechamento de Parcelamentos</p>
+        </div>
+        <div style="text-align:right">
+          <p style="margin:0; font-size:10px;">Gerado em: ${now}</p>
+          <p style="margin:0; font-size:10px;">Categoria: ${currentCategory === 'empresa' ? 'Empresas (PJ)' : 'Pessoa Física (PF)'}</p>
+        </div>
+      </div>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Empresa / Cliente</th>
+            <th>CNPJ / CPF</th>
+            <th>Status Geral</th>
+            <th>Checklist (Emitidos)</th>
+          </tr>
+        </thead>
+        <tbody>
+      `;
+
+      filtered.forEach(r => {
+        const activeFields = fields.filter(f => (r[f] || '').toUpperCase() !== 'NÃO');
+        const ems = r.emissions || {};
+        const doneCount = activeFields.filter(f => ems[f]).length;
+        const totalCount = activeFields.length;
+        const isAllDone = totalCount > 0 && doneCount === totalCount;
+
+        if (isAllDone) stats.done++; else if (totalCount > 0) stats.pending++;
+
+        html += `
+        <tr>
+          <td><b>${r.empresa}</b><br><small>${r.usuario}</small></td>
+          <td>${r.cnpj}</td>
+          <td>${r.docEnviado}</td>
+          <td>
+            ${totalCount > 0 ? `${doneCount}/${totalCount} - ${isAllDone ? '✅ OK' : '⏳ PENDENTE'}` : '—'}
+          </td>
+        </tr>`;
+      });
+
+      html += `
+        </tbody>
+      </table>
+      
+      <div style="margin-top:20px; background:#f9f9f9; padding:15px; border:1px solid #ddd; border-radius:5px;">
+        <h3 style="margin-top:0">Resumo do Período</h3>
+        <p>Total de Registros: <b>${stats.total}</b> | Concluídos: <b style="color:green">${stats.done}</b> | Pendentes: <b style="color:red">${stats.pending}</b></p>
+        <p>Percentual de Conclusão: <b>${Math.round((stats.done / (stats.done + stats.pending || 1)) * 100)}%</b></p>
+      </div>
+
+      <div class="print-sig">
+        <div style="border-top:1px solid #000; width:200px; margin-left:auto; margin-bottom:5px;"></div>
+        Responsável: João Wictor
+      </div>
+      
+      <div class="print-footer">
+        Este documento é um relatório gerado automaticamente pelo sistema ContecControl.
+      </div>
+      `;
+
+      area.innerHTML = html;
+      area.style.display = 'block';
+      window.print();
+      setTimeout(() => area.style.display = 'none', 500);
+    }
+
+    // ── MODAL HELPERS ──
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    function showCustomConfirm(title, text, onConfirm) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmText').innerHTML = text;
+      const btn = document.getElementById('confirmActionBtn');
+      btn.onclick = () => {
+        onConfirm();
+        closeModal('confirmModal');
+      };
+      openModal('confirmModal');
+    }
+
+    // ── EXPORT ──
+    function exportCSV() {
+      const h = ['Empresa', 'Usuário', 'CNPJ', 'Caixa Postal', 'Doc. Enviado', 'Pesquisa Fiscal', 'Parc. Receita', 'Par. PGFN', 'Parc. Simples', 'Parc. SEFA', 'Dom. SEFA', 'Dom. Simples', 'Regime 2025', 'CPF', 'Senha Simples', 'Senha SEFA', 'Notas'];
+      const rows = data.map(r => [
+        r.empresa, r.usuario, r.cnpj, r.caixaPostal, r.docEnviado, r.pesqFiscal,
+        r.parcReceita, r.parPgfn, r.parcSimples, r.parcSefa, r.domSefa, r.domSimples,
+        r.regime, r.cpf, r.senhaSim, r.senhaSefa,
+        (notes[r.id] || []).map(n => n.date + ': ' + n.text).join(' | ')
+      ].map(v => `"${(v || '').replace(/"/g, '""')}"`));
+      const csv = [h.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+      const b = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const u = URL.createObjectURL(b);
+      const a = document.createElement('a'); a.href = u; a.download = 'contec_controle.csv'; a.click();
+      URL.revokeObjectURL(u);
+      toast('📥 CSV exportado!');
+    }
+    function registerNew() {
+      const cat = document.getElementById('reg-category').value;
+      const empresa = document.getElementById('reg-empresa').value.trim();
+      const usuario = document.getElementById('reg-usuario').value.trim();
+      const cnpj = document.getElementById('reg-cnpj').value.trim();
+
+      if (!empresa || !cnpj) { toast('⚠️ Empresa e CNPJ/CPF são obrigatórios.'); return; }
+
+      const newId = Date.now();
+      const nr = {
+        id: newId,
+        category: cat,
+        isBase: false,
+        empresa, usuario, cnpj,
+        whatsapp: document.getElementById('reg-whatsapp').value.trim(),
+        caixaPostal: (document.getElementById('reg-caixa')?.value || '').trim(),
+        email: (document.getElementById('reg-email')?.value || '').trim(),
+        obs: (document.getElementById('reg-obs')?.value || '').trim(),
+        docEnviado: document.getElementById('reg-doc').innerText,
+        pesqFiscal: document.getElementById('reg-fiscal').innerText,
+        parcReceita: document.getElementById('reg-receita').innerText,
+        parPgfn: document.getElementById('reg-pgfn').innerText,
+        parcSefa: document.getElementById('reg-sefa').innerText,
+        parcPrefeitura: document.getElementById('reg-prefeitura').innerText,
+        parcPrevidenciario: document.getElementById('reg-previdenciario').innerText,
+        parcSimples: document.getElementById('reg-simples').innerText,
+        parcProcuradoria: document.getElementById('reg-procuradoria').innerText,
+      };
+
+      data.push(nr);
+      saveData();
+      showPage('list');
+      renderTable();
+      updateStats();
+      toast('✅ Registro adicionado!');
+
+      // Reset form
+      document.getElementById('reg-empresa').value = '';
+      document.getElementById('reg-usuario').value = '';
+      document.getElementById('reg-cnpj').value = '';
+      document.getElementById('reg-whatsapp').value = '';
+      if (document.getElementById('reg-caixa')) document.getElementById('reg-caixa').value = '';
+      if (document.getElementById('reg-email')) document.getElementById('reg-email').value = '';
+      if (document.getElementById('reg-obs')) document.getElementById('reg-obs').value = '';
+
+      // Reset badges
+      ['reg-doc', 'reg-fiscal', 'reg-receita', 'reg-pgfn', 'reg-sefa', 'reg-prefeitura', 'reg-previdenciario', 'reg-simples', 'reg-procuradoria'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = 'NÃO';
+      });
+    }
+    function importCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) return;
+
+        const sep = lines[0].includes(';') ? ';' : ',';
+        const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g, '').trim());
+
+        const newEntries = lines.slice(1).map(line => {
+          const cols = line.split(sep).map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+          const obj = {};
+          headers.forEach((h, i) => { obj[h] = cols[i] || ''; });
+
+          return {
+            id: Date.now() + Math.random(),
+            empresa: obj['Empresa'] || obj['EMPRESA'] || '',
+            usuario: obj['Usuário'] || obj['USUARIO'] || '',
+            cnpj: obj['CNPJ'] || '',
+            caixaPostal: obj['Caixa Postal'] || 'OK',
+            docEnviado: obj['Doc. Enviado'] || 'ZAP',
+            pesqFiscal: obj['Pesquisa Fiscal'] || 'NÃO',
+            parcReceita: obj['Parc. Receita'] || 'NÃO',
+            parPgfn: obj['Par. PGFN'] || 'NÃO',
+            parcSimples: obj['Parc. Simples'] || 'NÃO',
+            parcSefa: obj['Parc. SEFA'] || 'NÃO',
+            domSefa: obj['Dom. SEFA'] || '',
+            domSimples: obj['Dom. Simples'] || '',
+            regime: obj['Regime 2025'] || '',
+            cpf: obj['CPF'] || '',
+            senhaSim: obj['Senha Simples'] || '',
+            senhaSefa: obj['Senha SEFA'] || '',
+            whatsapp: '',
+            zapMsg: ''
+          };
+        }).filter(x => x.empresa);
+
+        const saved = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+        if (!saved.extra) saved.extra = [];
+        saved.extra = saved.extra.concat(newEntries);
+        localStorage.setItem(STORAGE, JSON.stringify({ edits: saved.edits || {}, notes, extra: saved.extra }));
+
+        init();
+        toast(`✅ ${newEntries.length} empresas importadas!`);
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    // ── TOAST ──
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(applyFilters, 200);
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        closeDrawer();
+        closeModal('editModal');
+        closeModal('notesModal');
+        closeModal('zapModal');
+      }
+    });
+
+    // ── INIT ──
+    function init() {
+      initFirebase();
+      loadData();
+      updateStats();
+      applyFilters();
+    }
+    init();
+  </script>
+</body>
+
+</html>
