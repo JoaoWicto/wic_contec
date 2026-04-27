@@ -5,8 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WicControle — Wictor</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#09090f">
+  <link rel="apple-touch-icon" href="icon.png">
   <link
-    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap"
     rel="stylesheet">
 
   <!-- Firebase SDKs -->
@@ -58,7 +61,7 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Lato', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
     }
@@ -323,7 +326,7 @@
       padding: 9px 14px 9px 38px;
       border-radius: var(--r-sm);
       font-size: 13px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Lato', sans-serif;
       outline: none;
       transition: border-color .2s;
     }
@@ -353,7 +356,7 @@
       padding: 9px 12px;
       border-radius: var(--r-sm);
       font-size: 12px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Lato', sans-serif;
       outline: none;
       cursor: pointer;
     }
@@ -367,7 +370,7 @@
       border-radius: var(--r-sm);
       cursor: pointer;
       font-size: 12px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Lato', sans-serif;
       font-weight: 500;
       border: none;
       transition: all .15s;
@@ -850,7 +853,7 @@
       padding: 9px 12px;
       border-radius: var(--r-sm);
       font-size: 13px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Lato', sans-serif;
       outline: none;
       transition: border-color .2s;
       width: 100%;
@@ -954,7 +957,7 @@
       padding: 10px 12px;
       border-radius: var(--r-sm);
       font-size: 13px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Lato', sans-serif;
       outline: none;
       resize: none;
       min-height: 60px;
@@ -1232,7 +1235,7 @@
     }
 
     .drawer-field-val.em {
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Lato', sans-serif;
       font-size: 13px;
     }
 
@@ -1532,7 +1535,7 @@
   <div id="login-page">
     <div class="login-card">
       <div style="text-align:center; margin-bottom:24px;">
-        <div class="logo-mark" style="width:50px; height:50px; margin:0 auto 12px; font-size:24px;">W</div>
+        <img src="icon.png" alt="WicControle" style="width:50px; height:50px; margin:0 auto 12px; border-radius:12px; object-fit:cover;">
         <div class="logo-text" style="font-size:18px;">WicControle<small>Acesso Restrito</small></div>
       </div>
       <div id="login-form">
@@ -1557,7 +1560,7 @@
   <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-mark">W</div>
+      <img src="icon.png" alt="WicControle" class="logo-mark" style="object-fit:cover;">
       <div class="logo-text">WicControle<small>Escritório de Contabilidade</small></div>
     </div>
     <div class="nav-items">
@@ -1640,32 +1643,32 @@
 
       <!-- STATS STRIP -->
       <div class="stats-grid">
-        <div class="stat-card" style="--clr:var(--accent2)">
+        <div class="stat-card" style="--clr:var(--accent2)" onclick="openStatsDetail('TOTAL')">
           <div class="stat-label">Total</div>
           <div class="stat-num" id="sv-total">0</div>
           <div class="stat-sub">empresas</div>
         </div>
-        <div class="stat-card" style="--clr:var(--cyan)">
+        <div class="stat-card" style="--clr:var(--cyan)" onclick="openStatsDetail('ZAP')">
           <div class="stat-label">📱 ZAP</div>
           <div class="stat-num" id="sv-zap">0</div>
           <div class="stat-sub">via WhatsApp</div>
         </div>
-        <div class="stat-card" style="--clr:var(--yellow)">
+        <div class="stat-card" style="--clr:var(--yellow)" onclick="openStatsDetail('IMPRESSO')">
           <div class="stat-label">🖨 Impresso</div>
           <div class="stat-num" id="sv-imp">0</div>
           <div class="stat-sub">impressos</div>
         </div>
-        <div class="stat-card" style="--clr:var(--red)">
+        <div class="stat-card" style="--clr:var(--red)" onclick="openStatsDetail('CANC')">
           <div class="stat-label">❌ Encerrados</div>
           <div class="stat-num" id="sv-canc">0</div>
           <div class="stat-sub">cancelados/liq.</div>
         </div>
-        <div class="stat-card" style="--clr:var(--green)">
+        <div class="stat-card" style="--clr:var(--green)" onclick="openStatsDetail('SIMPLES')">
           <div class="stat-label">📄 Simples</div>
           <div class="stat-num" id="sv-sim">0</div>
           <div class="stat-sub">regime simples</div>
         </div>
-        <div class="stat-card" style="--clr:var(--yellow)">
+        <div class="stat-card" style="--clr:var(--yellow)" onclick="openStatsDetail('NOTAS')">
           <div class="stat-label">💬 Notas</div>
           <div class="stat-num" id="sv-notas">0</div>
           <div class="stat-sub">comentários</div>
@@ -1752,9 +1755,10 @@
 
     <div
       style="padding:12px 24px;border-top:1px solid var(--border);background:var(--s1);font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center">
-      <span>💼 WicControle — <span id="footerCount">172</span> registros exibidos | <small>Desenvolvido por João
+      <span>💼 WicControle — <span id="footerCount">0</span> registros exibidos | <small>Desenvolvido por João
           Wictor</small></span>
       <div style="display:flex; gap:8px">
+        <button class="btn btn-ghost" onclick="exportBackup()">💾 Backup (JSON)</button>
         <button class="btn btn-ghost" onclick="document.getElementById('csvInput').click()">⬆ Importar CSV</button>
         <button class="btn btn-ghost" onclick="exportCSV()">⬇ Exportar CSV</button>
         <input type="file" id="csvInput" style="display:none" accept=".csv" onchange="importCSV(event)">
@@ -2842,7 +2846,7 @@
           msg += `Permanecemos à disposição para quaisquer esclarecimentos.`;
           document.getElementById('zapCustomMsg').value = msg;
         } else {
-          document.getElementById('zapCustomMsg').value = `WICCONTROLE :  ${greeting}!\n\nReferente à empresa *${r.empresa}* (CNPJ: ${r.cnpj}), gostaríamos de informar sobre seus documentos/parcelamentos.\n\nAtenciosamente,\nWicControle`;
+          document.getElementById('zapCustomMsg').value = `CONTEC :  ${greeting}!\n\nReferente à empresa *${r.empresa}* (CNPJ: ${r.cnpj}), gostaríamos de informar sobre seus documentos/parcelamentos.\n\nAtenciosamente,\nContecControl`;
         }
       }
       openModal('zapModal');
@@ -3438,6 +3442,7 @@
         closeModal('editModal');
         closeModal('notesModal');
         closeModal('zapModal');
+        closeModal('statsDetailModal');
       }
     });
 
@@ -3450,6 +3455,125 @@
     }
     init();
   </script>
-</body>
+  <!-- MODAL DE DETALHES DAS ESTATÍSTICAS -->
+  <div class="modal-overlay" id="statsDetailModal" onclick="if(event.target===this)closeModal('statsDetailModal')">
+    <div class="modal" style="max-width: 800px;">
+      <div class="modal-header">
+        <div class="modal-title" id="statsDetailTitle">Detalhes</div>
+        <button class="modal-close" onclick="closeModal('statsDetailModal')">×</button>
+      </div>
+      <div id="statsDetailList" style="max-height: 60vh; overflow-y: auto;">
+        <!-- Lista de empresas será injetada aqui -->
+      </div>
+    </div>
+  </div>
 
+  <script>
+    // ── MÁSCARAS DE DADOS ──
+    function maskCNPJ(el) {
+      let v = el.value.replace(/\D/g, '').substring(0, 14);
+      v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+      v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+      v = v.replace(/(\d{4})(\d)/, '$1-$2');
+      el.value = v;
+    }
+
+    function maskPhone(el) {
+      let v = el.value.replace(/\D/g, '').substring(0, 11);
+      if (v.length > 10) {
+        v = v.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+      } else if (v.length > 5) {
+        v = v.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+      } else if (v.length > 2) {
+        v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+      }
+      el.value = v;
+    }
+
+    // ── BACKUP ──
+    function exportBackup() {
+      const stored = localStorage.getItem(STORAGE);
+      if (!stored) return toast('Sem dados para backup.');
+      const blob = new Blob([stored], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_wiccontrole_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      toast('✅ Backup gerado com sucesso!');
+    }
+
+    // ── DETALHES ESTATÍSTICAS (FLUTUANTE) ──
+    function openStatsDetail(type) {
+      const listEl = document.getElementById('statsDetailList');
+      const titleEl = document.getElementById('statsDetailTitle');
+      // Filtra pela categoria ativa (empresa ou pessoa_fisica)
+      const catData = data.filter(r => r.category === currentCategory);
+      let filteredList = [];
+      let label = '';
+
+      switch(type) {
+        case 'TOTAL':
+          filteredList = catData;
+          label = 'Todas as Empresas';
+          break;
+        case 'ZAP':
+          filteredList = catData.filter(r => (r.docEnviado || '').toUpperCase().includes('ZAP'));
+          label = 'Empresas via WhatsApp';
+          break;
+        case 'IMPRESSO':
+          filteredList = catData.filter(r => (r.docEnviado || '').toUpperCase().includes('IMPRESSO'));
+          label = 'Empresas via Impresso';
+          break;
+        case 'CANC':
+          filteredList = catData.filter(r => ['CANCELADO', 'LIQUIDADO', 'ENCERRADO', 'RESCINDIDO'].includes((r.docEnviado || '').toUpperCase()));
+          label = 'Empresas Encerradas/Liq.';
+          break;
+        case 'SIMPLES':
+          filteredList = catData.filter(r => (r.parcSimples || '').toUpperCase() === 'SIM' || (r.regime || '').toUpperCase().includes('SIMPLES'));
+          label = 'Empresas no Simples Nacional';
+          break;
+        case 'NOTAS':
+          filteredList = catData.filter(r => notes[r.id]);
+          label = 'Empresas com Comentários';
+          break;
+      }
+
+      titleEl.textContent = `${label} (${filteredList.length})`;
+      listEl.innerHTML = filteredList.map(r => `
+        <div style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(r.empresa)}</div>
+            <div style="font-size: 11px; color: var(--text2); display: flex; gap: 8px; align-items: center; margin-top: 2px;">
+              <span>${r.cnpj || r.cpf || 'Sem documento'}</span>
+              ${r.usuario ? '<span style="color:var(--text3)">•</span> <span>' + esc(r.usuario) + '</span>' : ''}
+            </div>
+          </div>
+          <span class="badge ${badgeClass(r.docEnviado)}" style="flex-shrink:0;">${badgeIcon(r.docEnviado)} ${esc(r.docEnviado || '—')}</span>
+          <button class="btn btn-ghost" style="padding: 6px 10px; flex-shrink:0;" onclick="closeModal('statsDetailModal'); openDrawer(${r.id})">👁 Ver</button>
+        </div>
+      `).join('') || '<div style="padding: 20px; text-align: center; color: var(--text3);">Nenhum registro encontrado.</div>';
+
+      openModal('statsDetailModal');
+    }
+
+    // ── SERVICE WORKER REGISTRATION (PWA) ──
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        // Registro simples para habilitar instalação como App
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+
+    // Adiciona máscaras aos inputs após renderizar (exemplo para o modal de edição)
+    // Isso deve ser chamado sempre que o modal abrir ou formulário carregar.
+    function applyInputMasks() {
+      const cnpjIn = document.querySelector('input[placeholder*="CNPJ"]');
+      const phoneIn = document.querySelector('input[placeholder*="WhatsApp"]');
+      if (cnpjIn) cnpjIn.addEventListener('input', () => maskCNPJ(cnpjIn));
+      if (phoneIn) phoneIn.addEventListener('input', () => maskPhone(phoneIn));
+    }
+  </script>
+</body>
 </html>

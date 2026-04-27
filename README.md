@@ -1,29 +1,36 @@
-# ContecControl — Wictor
+# WicControle — Wictor
 
-Sistema de Gerenciamento de Controles Contec. Uma aplicação web moderna para gestão de empresas, controles fiscais e integrações.
+Sistema de gerenciamento de controles contábeis. Aplicação web PWA moderna para gestão de empresas, controles fiscais e parcelamentos.
 
 ## 🚀 Funcionalidades
 
-- **Dashboard de Estatísticas**: Visualize o status das suas empresas em tempo real.
-- **Gestão de Empresas**: CRUD completo para gerenciar dados empresariais.
-- **Integração com Excel**: Importação e exportação de dados via arquivos `.xlsx`.
-- **Sincronização em Nuvem**: Integração com Firebase para persistência de dados.
+- **Dashboard Interativo**: Estatísticas clicáveis com detalhes flutuantes.
+- **Gestão de Empresas**: CRUD completo com 17+ campos de dados.
+- **Integração com Excel**: Importação/exportação de dados `.xlsx` e `.csv`.
+- **Sincronização em Nuvem**: Firebase Realtime Database compartilhado entre todos os usuários.
+- **Notificações**: Envio automático via WhatsApp e Telegram.
+- **Backup**: Exportação completa de dados em JSON.
+- **PWA**: Instalável como aplicativo no celular e desktop.
 - **Interface Premium**: Design responsivo com modo escuro e animações fluidas.
 
 ## 🛠️ Tecnologias
 
-- **Frontend**: HTML5, CSS3 (Vanilla), JavaScript (ES6+).
-- **Banco de Dados**: Firebase Realtime Database.
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Banco de Dados**: Firebase Realtime Database
 - **Bibliotecas**:
-  - [Chart.js](https://www.chartjs.org/) para gráficos.
-  - [SheetJS](https://sheetjs.com/) para manipulação de Excel.
-  - [Google Fonts](https://fonts.google.com/) (DM Sans, Instrument Serif).
+  - [Chart.js](https://www.chartjs.org/) para gráficos
+  - [SheetJS](https://sheetjs.com/) para manipulação de Excel
+  - [Google Fonts](https://fonts.google.com/) (DM Sans, Instrument Serif)
 
-## 📦 Como rodar o projeto
+## 📦 Como usar
 
-1. Clone o repositório.
-2. Abra o arquivo `index.html` em seu navegador.
-3. Certifique-se de ter uma conexão com a internet para carregar as bibliotecas externas e o Firebase.
+1. Acesse o site pelo link do GitHub Pages.
+2. Faça login com suas credenciais Firebase.
+3. Gerencie suas empresas, parcelamentos e notificações.
+
+## 📱 Instalação como App
+
+No celular ou desktop, acesse o site e clique em **"Adicionar à tela inicial"** para instalar como aplicativo.
 
 ## 📄 Licença
 
