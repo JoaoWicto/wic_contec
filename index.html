@@ -2180,20 +2180,54 @@
     }
 
     function startCloudSync(uid) {
-      const dbRef = fbDb.ref('users/' + uid + '/appData');
+      // Caminho compartilhado para que todos vejam os mesmos dados
+      const dbRef = fbDb.ref('sharedAppData');
 
       dbRef.on('value', snapshot => {
         if (isSyncing) return;
         const cloudData = snapshot.val();
         if (cloudData) {
-          data = cloudData.data || [];
-          notes = cloudData.notes || {};
-          applyFilters();
+          // Atualiza o estado global com os dados da nuvem
+          if (cloudData.data) data = cloudData.data;
+          if (cloudData.notes) notes = cloudData.notes;
+          
+          // Salva uma cópia no localStorage para uso offline
+          const storageObj = {
+            edits: cloudData.edits || {},
+            notes: cloudData.notes || {},
+            extra: cloudData.extra || [],
+            deleted: cloudData.deleted || []
+          };
+          localStorage.setItem(STORAGE, JSON.stringify(storageObj));
+
           renderTable();
           updateStats();
         } else {
-          saveData();
+          // Se a nuvem estiver vazia, sobe os dados locais atuais
+          saveToCloud();
         }
+      });
+    }
+
+    function saveToCloud() {
+      if (!isCloudEnabled || !fbAuth.currentUser) return;
+      
+      const stored = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+      isSyncing = true;
+      
+      fbDb.ref('sharedAppData').set({
+        data: data,
+        notes: notes,
+        edits: stored.edits || {},
+        extra: stored.extra || [],
+        deleted: stored.deleted || [],
+        lastUpdate: Date.now(),
+        updatedBy: fbAuth.currentUser.email
+      }).then(() => {
+        setTimeout(() => { isSyncing = false; }, 500);
+      }).catch(err => {
+        console.error("Erro Cloud Sync:", err);
+        isSyncing = false;
       });
     }
 
@@ -2452,6 +2486,10 @@
         }
       });
       localStorage.setItem(STORAGE, JSON.stringify({ edits, notes, extra, deleted }));
+      
+      // Sincroniza com o Firebase para que outros usuários vejam as mudanças
+      saveToCloud();
+
       const tIn = document.getElementById('tgToken');
       const cIn = document.getElementById('tgChatId');
       if (tIn) localStorage.setItem('contec_tg_token', tIn.value);
